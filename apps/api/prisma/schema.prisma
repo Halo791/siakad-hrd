@@ -1,0 +1,667 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StudyPlanStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  PERMIT
+  SICK
+  ABSENT
+}
+
+enum LeaveStatus {
+  SUBMITTED
+  PROCESS_PA
+  PROCESS_KAPRODI
+  PROCESS_DEKAN
+  APPROVED
+  REJECTED
+}
+
+enum GenericStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model University {
+  id         String    @id @default(cuid())
+  name       String
+  code       String    @unique
+  users      User[]
+  faculties  Faculty[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model User {
+  id           String        @id @default(cuid())
+  universityId String
+  roleId       String
+  name         String
+  email        String        @unique
+  passwordHash String
+  refreshToken String?
+  status       GenericStatus @default(ACTIVE)
+  role         Role          @relation(fields: [roleId], references: [id])
+  userRoles    UserRole[]
+  university   University    @relation(fields: [universityId], references: [id])
+  student      Student?
+  lecturer     Lecturer?
+  auditLogs    AuditLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  users           User[]
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  name            String
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  canRead      Boolean    @default(false)
+  canInsert    Boolean    @default(false)
+  canUpdate    Boolean    @default(false)
+  canDelete    Boolean    @default(false)
+  canValidate  Boolean    @default(false)
+  canApprove   Boolean    @default(false)
+  canReject    Boolean    @default(false)
+  canPrint     Boolean    @default(false)
+  canExport    Boolean    @default(false)
+  canImport    Boolean    @default(false)
+  canGenerate  Boolean    @default(false)
+  canLock      Boolean    @default(false)
+  canUnlock    Boolean    @default(false)
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model Faculty {
+  id            String         @id @default(cuid())
+  universityId  String
+  code          String
+  name          String
+  accreditation String?
+  leaderName    String?
+  leaderPhone   String?
+  university    University     @relation(fields: [universityId], references: [id])
+  studyPrograms StudyProgram[]
+
+  @@unique([universityId, code])
+}
+
+model StudyProgram {
+  id             String       @id @default(cuid())
+  facultyId      String
+  code           String
+  name           String
+  degreeLevel    String?
+  degreeLevelId  String?
+  faculty        Faculty      @relation(fields: [facultyId], references: [id])
+  degreeLevelRef DegreeLevelRef? @relation(fields: [degreeLevelId], references: [id])
+  students       Student[]
+  curriculums    Curriculum[]
+  classes        Class[]
+  lecturers      Lecturer[]
+  uktRates       UktRate[]
+  settings       StudyProgramSetting[]
+
+  @@unique([facultyId, code])
+}
+
+model DegreeLevelRef {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  studyPrograms StudyProgram[]
+}
+
+model StudyProgramSetting {
+  id                     String      @id @default(cuid())
+  studyProgramId         String
+  periodId               String
+  openKrs                Boolean     @default(false)
+  krsStartDate           DateTime?
+  krsEndDate             DateTime?
+  openKrsValidation      Boolean     @default(false)
+  openPrintKrs           Boolean     @default(false)
+  openPrintUts           Boolean     @default(false)
+  openPrintUas           Boolean     @default(false)
+  minAttendanceUts       Float       @default(75)
+  minAttendanceUas       Float       @default(75)
+  totalMeetings          Int         @default(16)
+  allowLecturerGenerate  Boolean     @default(true)
+  allowLecturerEditGrade Boolean     @default(false)
+  studyProgram           StudyProgram @relation(fields: [studyProgramId], references: [id])
+  period                 AcademicPeriod @relation(fields: [periodId], references: [id])
+
+  @@unique([studyProgramId, periodId])
+}
+
+model AcademicYear {
+  id      String           @id @default(cuid())
+  code    String           @unique
+  name    String
+  periods AcademicPeriod[]
+}
+
+model AcademicPeriod {
+  id             String         @id @default(cuid())
+  academicYearId String
+  code           String         @unique
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean        @default(false)
+  academicYear   AcademicYear   @relation(fields: [academicYearId], references: [id])
+  studyPlans     StudyPlan[]
+  khs            Khs[]
+  classes        Class[]
+  studyProgramSettings StudyProgramSetting[]
+}
+
+model Student {
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  studyProgramId  String
+  studentClassId  String?
+  studentStatusId String?
+  studySystemId   String?
+  nim             String            @unique
+  name            String
+  status          String
+  currentSemester Int               @default(1)
+  user            User              @relation(fields: [userId], references: [id])
+  studyProgram    StudyProgram      @relation(fields: [studyProgramId], references: [id])
+  studentClass    StudentClassRef?  @relation(fields: [studentClassId], references: [id])
+  studentStatus   StudentStatusRef? @relation(fields: [studentStatusId], references: [id])
+  studySystem     StudySystemRef?   @relation(fields: [studySystemId], references: [id])
+  parents         StudentParent[]
+  classStudents   ClassStudent[]
+  studyPlans      StudyPlan[]
+  transcripts     Transcript[]
+  khs             Khs[]
+  documents       StudentDocument[]
+}
+
+model StudySystemRef {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  name     String
+  students Student[]
+}
+
+model StudentClassRef {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  name     String
+  students Student[]
+}
+
+model StudentStatusRef {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  name     String
+  students Student[]
+}
+
+model Lecturer {
+  id         String         @id @default(cuid())
+  userId     String         @unique
+  studyProgramId String?
+  nidn       String         @unique
+  name       String
+  user       User           @relation(fields: [userId], references: [id])
+  studyProgram StudyProgram? @relation(fields: [studyProgramId], references: [id])
+  classLinks ClassLecturer[]
+}
+
+model StudentParent {
+  id        String   @id @default(cuid())
+  studentId String
+  name      String
+  relation  String
+  phone     String?
+  student   Student  @relation(fields: [studentId], references: [id])
+}
+
+model Curriculum {
+  id                String             @id @default(cuid())
+  studyProgramId    String
+  year              Int
+  name              String
+  studyProgram      StudyProgram       @relation(fields: [studyProgramId], references: [id])
+  curriculumCourses CurriculumCourse[]
+}
+
+model Course {
+  id               String               @id @default(cuid())
+  code             String               @unique
+  name             String
+  sks              Int
+  minPassingGrade  String
+  isMandatory      Boolean              @default(true)
+  curriculumCourses CurriculumCourse[]
+  prerequisites    CoursePrerequisite[] @relation("course_prereq")
+  requiredBy       CoursePrerequisite[] @relation("course_required")
+  equivalencesA    CourseEquivalence[]  @relation("equiv_from")
+  equivalencesB    CourseEquivalence[]  @relation("equiv_to")
+  classes          Class[]
+}
+
+model CurriculumCourse {
+  id           String     @id @default(cuid())
+  curriculumId String
+  courseId     String
+  semester     Int
+  isPackage    Boolean    @default(false)
+  curriculum   Curriculum @relation(fields: [curriculumId], references: [id])
+  course       Course     @relation(fields: [courseId], references: [id])
+
+  @@unique([curriculumId, courseId])
+}
+
+model CoursePrerequisite {
+  id                   String @id @default(cuid())
+  courseId             String
+  prerequisiteCourseId String
+  course               Course @relation("course_prereq", fields: [courseId], references: [id])
+  prerequisiteCourse   Course @relation("course_required", fields: [prerequisiteCourseId], references: [id])
+}
+
+model CourseEquivalence {
+  id           String @id @default(cuid())
+  fromCourseId String
+  toCourseId   String
+  fromCourse   Course @relation("equiv_from", fields: [fromCourseId], references: [id])
+  toCourse     Course @relation("equiv_to", fields: [toCourseId], references: [id])
+}
+
+model GradingScale {
+  id         String @id @default(cuid())
+  letter     String
+  minValue   Float
+  maxValue   Float
+  gradePoint Float
+}
+
+model GradeComponent {
+  id         String  @id @default(cuid())
+  name       String
+  percentage Float
+  classId    String?
+}
+
+model Class {
+  id             String         @id @default(cuid())
+  studyProgramId String
+  courseId       String
+  periodId       String
+  name           String
+  capacity       Int
+  studyProgram   StudyProgram   @relation(fields: [studyProgramId], references: [id])
+  course         Course         @relation(fields: [courseId], references: [id])
+  period         AcademicPeriod @relation(fields: [periodId], references: [id])
+  schedules      ClassSchedule[]
+  lecturers      ClassLecturer[]
+  students       ClassStudent[]
+  meetings       Meeting[]
+  studyPlanItems StudyPlanItem[]
+}
+
+model ClassSchedule {
+  id        String @id @default(cuid())
+  classId   String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  room      String
+  class     Class  @relation(fields: [classId], references: [id])
+}
+
+model ClassLecturer {
+  id         String   @id @default(cuid())
+  classId    String
+  lecturerId String
+  isPrimary  Boolean  @default(false)
+  class      Class    @relation(fields: [classId], references: [id])
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id])
+}
+
+model ClassStudent {
+  id        String   @id @default(cuid())
+  classId   String
+  studentId String
+  class     Class    @relation(fields: [classId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
+  grades    Grade[]
+  attendances Attendance[]
+
+  @@unique([classId, studentId])
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  classId     String
+  meetingNo   Int
+  meetingDate DateTime
+  class       Class        @relation(fields: [classId], references: [id])
+  attendances Attendance[]
+}
+
+model Attendance {
+  id             String           @id @default(cuid())
+  meetingId      String
+  classStudentId String
+  status         AttendanceStatus
+  meeting        Meeting          @relation(fields: [meetingId], references: [id])
+  classStudent   ClassStudent     @relation(fields: [classStudentId], references: [id])
+}
+
+model StudyPlan {
+  id        String          @id @default(cuid())
+  studentId String
+  periodId  String
+  status    StudyPlanStatus @default(DRAFT)
+  student   Student         @relation(fields: [studentId], references: [id])
+  period    AcademicPeriod  @relation(fields: [periodId], references: [id])
+  items     StudyPlanItem[]
+}
+
+model StudyPlanItem {
+  id          String    @id @default(cuid())
+  studyPlanId String
+  classId     String
+  studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id])
+  class       Class     @relation(fields: [classId], references: [id])
+}
+
+model Grade {
+  id             String       @id @default(cuid())
+  classStudentId String
+  score          Float
+  letter         String
+  isLocked       Boolean      @default(false)
+  classStudent   ClassStudent @relation(fields: [classStudentId], references: [id])
+}
+
+model Transcript {
+  id        String  @id @default(cuid())
+  studentId String
+  gpa       Float
+  totalSks  Int
+  student   Student @relation(fields: [studentId], references: [id])
+}
+
+model AcademicAdvisor {
+  id         String @id @default(cuid())
+  studentId  String
+  lecturerId String
+}
+
+model Consultation {
+  id         String   @id @default(cuid())
+  studentId  String
+  lecturerId String
+  message    String
+  createdAt  DateTime @default(now())
+}
+
+model Bill {
+  id        String   @id @default(cuid())
+  studentId String
+  amount    Float
+  type      String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id      String   @id @default(cuid())
+  billId  String
+  amount  Float
+  paidAt  DateTime @default(now())
+  method  String
+  status  String
+}
+
+model VirtualAccount {
+  id       String @id @default(cuid())
+  billId   String
+  vaNumber String @unique
+  provider String
+  status   String
+}
+
+model UktGroup {
+  id    String @id @default(cuid())
+  code  String @unique
+  name  String
+  rates UktRate[]
+}
+
+model UktRate {
+  id             String       @id @default(cuid())
+  uktGroupId     String
+  studyProgramId String
+  amount         Float
+  uktGroup       UktGroup     @relation(fields: [uktGroupId], references: [id])
+  studyProgram   StudyProgram @relation(fields: [studyProgramId], references: [id])
+}
+
+model AdmissionPeriod {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  startDate DateTime
+  endDate   DateTime
+}
+
+model Applicant {
+  id                String @id @default(cuid())
+  admissionPeriodId String
+  registrationNo    String @unique
+  name              String
+  status            String
+}
+
+model ApplicantDocument {
+  id          String @id @default(cuid())
+  applicantId String
+  name        String
+  fileUrl     String
+}
+
+model SelectionRequirement {
+  id                String @id @default(cuid())
+  admissionPeriodId String
+  name              String
+  minScore          Float?
+}
+
+model SelectionScore {
+  id                   String @id @default(cuid())
+  applicantId          String
+  selectionRequirementId String
+  score                Float
+}
+
+model FinalProject {
+  id        String @id @default(cuid())
+  studentId String
+  title     String
+  status    String
+}
+
+model FinalProjectGuidance {
+  id            String   @id @default(cuid())
+  finalProjectId String
+  lecturerId    String
+  notes         String
+  createdAt     DateTime @default(now())
+}
+
+model FinalProjectExam {
+  id            String   @id @default(cuid())
+  finalProjectId String
+  examDate      DateTime
+  score         Float
+}
+
+model LeaveRequest {
+  id        String      @id @default(cuid())
+  studentId String
+  periodId  String
+  reason    String
+  status    LeaveStatus @default(SUBMITTED)
+}
+
+model Questionnaire {
+  id       String @id @default(cuid())
+  code     String @unique
+  name     String
+  periodId String
+}
+
+model QuestionnaireQuestion {
+  id              String @id @default(cuid())
+  questionnaireId String
+  type            String
+  question        String
+}
+
+model QuestionnaireAnswer {
+  id                    String @id @default(cuid())
+  questionnaireQuestionId String
+  answerText            String
+  score                 Float?
+}
+
+model QuestionnaireResponse {
+  id              String   @id @default(cuid())
+  questionnaireId String
+  studentId       String
+  submittedAt     DateTime @default(now())
+}
+
+model GraduationPeriod {
+  id   String @id @default(cuid())
+  code String @unique
+  name String
+}
+
+model GraduationStudent {
+  id                String @id @default(cuid())
+  graduationPeriodId String
+  studentId         String
+  status            String
+}
+
+model CommencementPeriod {
+  id   String @id @default(cuid())
+  code String @unique
+  name String
+}
+
+model CommencementStudent {
+  id                  String @id @default(cuid())
+  commencementPeriodId String
+  studentId           String
+  status              String
+}
+
+model StudentActivity {
+  id            String  @id @default(cuid())
+  studentId     String
+  name          String
+  category      String
+  score         Float?
+  isShownInSkpi Boolean @default(false)
+}
+
+model MbkmActivity {
+  id        String @id @default(cuid())
+  studentId String
+  type      String
+  partner   String
+  semester  String
+}
+
+model MbkmConversion {
+  id             String @id @default(cuid())
+  mbkmActivityId String
+  courseId       String
+  convertedScore Float
+}
+
+model Khs {
+  id        String         @id @default(cuid())
+  studentId String
+  periodId  String
+  ips       Float
+  ipk       Float
+  student   Student        @relation(fields: [studentId], references: [id])
+  period    AcademicPeriod @relation(fields: [periodId], references: [id])
+
+  @@unique([studentId, periodId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model StudentDocument {
+  id          String   @id @default(cuid())
+  studentId   String
+  category    String
+  fileName    String
+  filePath    String
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id])
+}

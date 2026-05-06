@@ -1,0 +1,2 @@
+-- Initial MVP migration.
+-- For full DDL, run: npx prisma migrate dev --name init

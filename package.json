@@ -1,0 +1,23 @@
+{
+  "name": "siakadku",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm --workspace @siakad/api run start:dev",
+    "dev:web": "npm --workspace @siakad/web run dev",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces",
+    "db:migrate": "npm --workspace @siakad/api run prisma:migrate",
+    "db:seed": "npm --workspace @siakad/api run prisma:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
+

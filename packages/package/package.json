@@ -1,0 +1,21 @@
+{
+  "name": "dompet",
+  "version": "1.0.0",
+  "description": "dompet admin ",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm start",
+    "start": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-group-routes": "^1.1.0",
+    "nodemon": "^3.1.7"
+  }
+}

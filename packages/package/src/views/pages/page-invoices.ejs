@@ -1,0 +1,115 @@
+<%- contentFor('css') %>
+<link href="vendor/datatables/css/jquery.dataTables.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="vendor/nouislider/nouislider.min.css">
+
+<%- contentFor('body') %>
+<div class="content-body">
+   <!-- row -->
+   <div class="container-fluid">
+     <div class="d-flex mb-3">
+       <div class="mb-3 align-items-center me-auto">
+         <h4 class="card-title">Payment History</h4>
+         <span class="fs-12">Lorem ipsum dolor sit amet, consectetur</span>
+       </div>
+       <a href="javascript:void(0);" class="btn btn-outline-primary mb-3">
+         <i class="fa fa-calendar me-3 scale3"></i>Filter Date </a>
+     </div>
+     <div class="row">
+       <div class="col-xl-12">
+         <div class="table-responsive fs-14">
+           <table class="table card-table display mb-4 dataTablesCard " id="example5">
+             <thead>
+               <tr>
+                 <th>
+                   <div class="form-check">
+                     <input class="form-check-input" type="checkbox" value="" id="checkAll">
+                     <label class="form-check-label" for="checkAll"></label>
+                   </div>
+                 </th>
+                 <th>ID Invoice</th>
+                 <th>Date</th>
+                 <th>Recipient</th>
+                 <th>Email</th>
+                 <th>Service Type</th>
+                 <th>Status</th>
+                 <th class="text-end">Action</th>
+               </tr>
+             </thead>
+             <tbody>
+              <% if(data && Array.isArray(data)){ %>
+                <% data.forEach((val)=>{ %>
+                  <tr>
+                    <td>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault2">
+                        <label class="form-check-label" for="flexCheckDefault2"></label>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-black font-w500"><%= val.id %></span>
+                    </td>
+                    <td>
+                      <span class="text-black text-nowrap"><%= val.date %></span>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img src="<%= val.recipient_image %>" alt="" class="rounded me-3" width="50">
+                        <div>
+                          <h6 class="fs-16 text-black font-w600 mb-0 text-nowrap"><%= val.recipient_name %></h6>
+                          <span class="fs-14"><%= val.recipient_status %></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-black"><%= val.email %></span>
+                    </td>
+                    <td>
+                      <span class="text-black"><%= val.service %> </span>
+                    </td>
+                    <td>
+                      <% if(val.status == 'Pending'){ %>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-warning light"><%= val.status %></a>
+                      <% } else if(val.status == 'Canceled'){ %>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-danger light"><%= val.status %></a>
+                      <% } else { %>
+                        <a href="javascript:void(0)" class="btn  btn-sm btn-success light"><%= val.status %></a>
+                      <% } %>
+                    </td>
+                    <td class="text-end">
+                      <div class="dropdown">
+                        <a href="javascript:void(0);" class="btn-link" data-bs-toggle="dropdown" aria-expanded="false">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="#575757" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" stroke="#575757" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" stroke="#575757" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                          </svg>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                          <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                          <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <%  }) 
+                } %>
+             </tbody>
+           </table>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
+
+<%- contentFor('script') %>
+<script src="vendor/chart-js/chart.bundle.min.js"></script>
+<script src="vendor/jquery-nice-select/js/jquery.nice-select.min.js"></script>
+
+<!-- Datatable -->
+<script src="./vendor/datatables/js/jquery.dataTables.min.js"></script>
+<script src="./js/plugins-init/datatables.init.js"></script>
+
+<script src="js/custom.min.js"></script>
+<script src="js/dlabnav-init.js"></script>
+<script src="js/demo.js"></script>
