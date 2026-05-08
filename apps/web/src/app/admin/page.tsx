@@ -60,8 +60,54 @@ type MasterKey =
   | 'students'
   | 'student-parents';
 type MasterView = 'list' | 'input' | 'study-program-detail';
-type AdminWorkspace = 'master-data' | 'curriculum-module';
+type AdminWorkspace = 'master-data' | 'curriculum-module' | 'access-control';
 type CurriculumTab = 'years' | 'courses' | 'copy-courses' | 'program-curriculum' | 'grading-scale';
+type AccessTab = 'role-permissions' | 'user-roles' | 'audit-logs';
+type AccessActionKey =
+  | 'canRead'
+  | 'canInsert'
+  | 'canUpdate'
+  | 'canDelete'
+  | 'canValidate'
+  | 'canApprove'
+  | 'canReject'
+  | 'canPrint'
+  | 'canExport'
+  | 'canImport'
+  | 'canGenerate'
+  | 'canLock'
+  | 'canUnlock';
+type AccessRole = { id: string; code: string; name: string };
+type AccessPermission = { id: string; code: string; name: string };
+type AccessRolePermission = {
+  id?: string;
+  roleId: string;
+  permissionId: string;
+  permission: AccessPermission;
+} & Record<AccessActionKey, boolean>;
+type AccessUser = {
+  id: string;
+  name: string;
+  email: string;
+  roleId: string;
+  role?: AccessRole;
+  userRoles?: Array<{ id: string; roleId: string; role: AccessRole }>;
+};
+type AuditLogRow = {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  metadata?: {
+    statusCode?: number;
+    durationMs?: number;
+    body?: unknown;
+    query?: unknown;
+    error?: unknown;
+  } | null;
+  createdAt: string;
+  user?: { name: string; email: string } | null;
+};
 
 export default function AdminPage() {
   const [summary, setSummary] = useState<AdminSummary>({ students: 0, classes: 0, submittedKrs: 0 });
@@ -72,6 +118,7 @@ export default function AdminPage() {
   const [masterView, setMasterView] = useState<MasterView>('list');
   const [activeWorkspace, setActiveWorkspace] = useState<AdminWorkspace>('master-data');
   const [curriculumTab, setCurriculumTab] = useState<CurriculumTab>('years');
+  const [accessTab, setAccessTab] = useState<AccessTab>('role-permissions');
   const [selectedStudyProgramId, setSelectedStudyProgramId] = useState('');
   const [loadingMaster, setLoadingMaster] = useState(false);
 
@@ -122,6 +169,14 @@ export default function AdminPage() {
   const openCurriculumTab = (targetTab: CurriculumTab) => {
     setActiveWorkspace('curriculum-module');
     setCurriculumTab(targetTab);
+    setMasterView('list');
+    setSelectedStudyProgramId('');
+    setError('');
+    setSuccess('');
+  };
+  const openAccessTab = (targetTab: AccessTab) => {
+    setActiveWorkspace('access-control');
+    setAccessTab(targetTab);
     setMasterView('list');
     setSelectedStudyProgramId('');
     setError('');
@@ -491,6 +546,15 @@ export default function AdminPage() {
       description: 'Konfigurasi sistem',
       items: [
         {
+          label: 'Hak Akses User',
+          active: activeWorkspace === 'access-control',
+          children: [
+            { label: 'Role & Permission', active: activeWorkspace === 'access-control' && accessTab === 'role-permissions', onClick: () => openAccessTab('role-permissions') },
+            { label: 'Assign Role User', active: activeWorkspace === 'access-control' && accessTab === 'user-roles', onClick: () => openAccessTab('user-roles') },
+            { label: 'Audit Log', active: activeWorkspace === 'access-control' && accessTab === 'audit-logs', onClick: () => openAccessTab('audit-logs') }
+          ]
+        },
+        {
           label: 'Periode Akademik',
           active: activeWorkspace === 'master-data' && tab === 'academic-periods',
           children: [
@@ -744,7 +808,9 @@ export default function AdminPage() {
             <Card label="Total Master Data" value={String(totalMasterRecords)} tone="slate" />
           </div>
 
-          {activeWorkspace === 'curriculum-module' ? (
+          {activeWorkspace === 'access-control' ? (
+            <AccessControlPage activeTab={accessTab} onTabChange={setAccessTab} />
+          ) : activeWorkspace === 'curriculum-module' ? (
             <CurriculumModulePage activeTab={curriculumTab} onTabChange={setCurriculumTab} />
           ) : (
           <div className="mt-5 min-w-0 rounded border border-slate-200 bg-white">
@@ -825,6 +891,420 @@ export default function AdminPage() {
 
 function LoginPrompt() {
   return <p className="m-5 rounded border border-amber-200 bg-amber-50 p-3 text-sm">Silakan <Link href="/login" className="underline">login</Link> untuk melihat data dashboard.</p>;
+}
+
+const ACCESS_TABS: Array<{ key: AccessTab; label: string; description: string }> = [
+  { key: 'role-permissions', label: 'Role & Permission', description: 'Atur hak akses menu per role' },
+  { key: 'user-roles', label: 'Assign Role User', description: 'Tambahkan multi-role dan role utama user' },
+  { key: 'audit-logs', label: 'Audit Log', description: 'Riwayat perubahan akses dan aktivitas user' }
+];
+
+const ACCESS_ACTIONS: Array<{ key: AccessActionKey; label: string }> = [
+  { key: 'canRead', label: 'Read' },
+  { key: 'canInsert', label: 'Insert' },
+  { key: 'canUpdate', label: 'Update' },
+  { key: 'canDelete', label: 'Delete' },
+  { key: 'canValidate', label: 'Validate' },
+  { key: 'canApprove', label: 'Approve' },
+  { key: 'canReject', label: 'Reject' },
+  { key: 'canPrint', label: 'Print' },
+  { key: 'canExport', label: 'Export' },
+  { key: 'canImport', label: 'Import' },
+  { key: 'canGenerate', label: 'Generate' },
+  { key: 'canLock', label: 'Lock' },
+  { key: 'canUnlock', label: 'Unlock' }
+];
+
+const EMPTY_ACCESS_FLAGS = ACCESS_ACTIONS.reduce((acc, action) => {
+  acc[action.key] = false;
+  return acc;
+}, {} as Record<AccessActionKey, boolean>);
+
+function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; onTabChange: (tab: AccessTab) => void }) {
+  const [roles, setRoles] = useState<AccessRole[]>([]);
+  const [permissions, setPermissions] = useState<AccessPermission[]>([]);
+  const [users, setUsers] = useState<AccessUser[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<AccessRolePermission[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedAssignRoleId, setSelectedAssignRoleId] = useState('');
+  const [permissionForm, setPermissionForm] = useState({ code: '', name: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [accessError, setAccessError] = useState('');
+
+  useEffect(() => {
+    void loadAccessBase();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setRolePermissions([]);
+      return;
+    }
+    void loadRolePermissions(selectedRoleId);
+  }, [selectedRoleId]);
+
+  async function loadAccessBase() {
+    setLoading(true);
+    setAccessError('');
+    try {
+      const [roleRows, permissionRows, userRows, logRows] = await Promise.all([
+        secureGet<AccessRole[]>('/access/roles'),
+        secureGet<AccessPermission[]>('/access/permissions'),
+        secureGet<AccessUser[]>('/access/users'),
+        secureGet<AuditLogRow[]>('/access/audit-logs?limit=60')
+      ]);
+      setRoles(roleRows);
+      setPermissions(permissionRows);
+      setUsers(userRows);
+      setAuditLogs(logRows);
+      setSelectedRoleId((current) => current && roleRows.some((role) => role.id === current) ? current : roleRows[0]?.id ?? '');
+      setSelectedAssignRoleId((current) => current && roleRows.some((role) => role.id === current) ? current : roleRows[0]?.id ?? '');
+      setSelectedUserId((current) => current && userRows.some((user) => user.id === current) ? current : userRows[0]?.id ?? '');
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal memuat data hak akses');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadRolePermissions(roleId: string) {
+    try {
+      const rows = await secureGet<AccessRolePermission[]>(`/access/role-permissions/${roleId}`);
+      setRolePermissions(rows);
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal memuat permission role');
+    }
+  }
+
+  async function createPermission(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const code = permissionForm.code.trim().toUpperCase().replaceAll(' ', '_');
+    const name = permissionForm.name.trim();
+    if (!code || !name) {
+      setAccessError('Kode dan nama menu akses wajib diisi.');
+      return;
+    }
+    setSaving(true);
+    setAccessError('');
+    setNotice('');
+    try {
+      await securePost<AccessPermission>('/access/permissions', { code, name });
+      setPermissionForm({ code: '', name: '' });
+      setNotice(`Menu akses ${name} berhasil disiapkan.`);
+      await loadAccessBase();
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal membuat permission');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function savePermissionFlags(permissionId: string, nextFlags: Record<AccessActionKey, boolean>) {
+    if (!selectedRoleId) return;
+    setSaving(true);
+    setAccessError('');
+    setNotice('');
+    try {
+      await securePost('/access/role-permissions', {
+        roleId: selectedRoleId,
+        permissionId,
+        ...nextFlags
+      });
+      await loadRolePermissions(selectedRoleId);
+      setNotice('Hak akses berhasil diperbarui.');
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal memperbarui hak akses');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function togglePermission(permissionId: string, actionKey: AccessActionKey, checked: boolean) {
+    const existing = rolePermissions.find((item) => item.permissionId === permissionId);
+    const nextFlags = { ...EMPTY_ACCESS_FLAGS };
+    ACCESS_ACTIONS.forEach((action) => {
+      nextFlags[action.key] = existing?.[action.key] ?? false;
+    });
+    nextFlags[actionKey] = checked;
+    await savePermissionFlags(permissionId, nextFlags);
+  }
+
+  async function applyPreset(preset: 'read' | 'full' | 'clear') {
+    if (!selectedRoleId || permissions.length === 0) return;
+    setSaving(true);
+    setAccessError('');
+    setNotice('');
+    const nextFlags = ACCESS_ACTIONS.reduce((acc, action) => {
+      acc[action.key] = preset === 'full' || (preset === 'read' && action.key === 'canRead');
+      return acc;
+    }, {} as Record<AccessActionKey, boolean>);
+    try {
+      await Promise.all(permissions.map((permission) => securePost('/access/role-permissions', {
+        roleId: selectedRoleId,
+        permissionId: permission.id,
+        ...nextFlags
+      })));
+      await loadRolePermissions(selectedRoleId);
+      setNotice(preset === 'clear' ? 'Semua akses role ini sudah dikosongkan.' : 'Preset akses role berhasil diterapkan.');
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal menerapkan preset akses');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function assignRole(makePrimary: boolean) {
+    if (!selectedUserId || !selectedAssignRoleId) {
+      setAccessError('Pilih user dan role terlebih dahulu.');
+      return;
+    }
+    setSaving(true);
+    setAccessError('');
+    setNotice('');
+    try {
+      await securePost('/access/users/assign-role', { userId: selectedUserId, roleId: selectedAssignRoleId });
+      if (makePrimary) {
+        await securePost('/access/users/set-primary-role', { userId: selectedUserId, roleId: selectedAssignRoleId });
+      }
+      await loadAccessBase();
+      setNotice(makePrimary ? 'Role berhasil dijadikan role utama user.' : 'Role berhasil ditambahkan ke user.');
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal menyimpan role user');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const selectedRole = roles.find((role) => role.id === selectedRoleId);
+  const selectedUser = users.find((user) => user.id === selectedUserId);
+  const rolePermissionMap = new Map(rolePermissions.map((item) => [item.permissionId, item]));
+  const activeActions = rolePermissions.reduce((sum, permission) => {
+    return sum + ACCESS_ACTIONS.filter((action) => permission[action.key]).length;
+  }, 0);
+
+  return (
+    <div className="mt-5 rounded border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-white px-4 py-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">Setting Super Admin</p>
+            <h3 className="mt-1 text-xl font-bold text-slate-900">Hak Akses Role User</h3>
+            <p className="mt-1 text-sm text-slate-500">Atur halaman/menu yang boleh dibaca, diinput, divalidasi, dicetak, diekspor, dikunci, dan dibuka kembali oleh setiap role.</p>
+          </div>
+          <button onClick={() => void loadAccessBase()} className="w-fit rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">Muat Ulang</button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 border-b border-slate-200 p-4 lg:grid-cols-3">
+        <AccessStatCard label="Role tersedia" value={String(roles.length)} />
+        <AccessStatCard label="Menu akses" value={String(permissions.length)} />
+        <AccessStatCard label="Aksi aktif role terpilih" value={String(activeActions)} />
+      </div>
+
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 px-4 py-3">
+        {ACCESS_TABS.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => onTabChange(item.key)}
+            className={`rounded border px-3 py-2 text-left text-sm transition ${activeTab === item.key ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            <span className="block font-semibold">{item.label}</span>
+            <span className={`block text-xs ${activeTab === item.key ? 'text-teal-50' : 'text-slate-500'}`}>{item.description}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4">
+        {notice ? <p className="mb-3 rounded border border-emerald-200 bg-emerald-50 p-2 text-sm text-emerald-700">{notice}</p> : null}
+        {accessError ? <p className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{accessError}</p> : null}
+        {loading ? (
+          <p className="text-sm text-slate-500">Memuat setting akses...</p>
+        ) : activeTab === 'role-permissions' ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1.2fr]">
+              <div className="rounded border border-slate-200 bg-slate-50 p-4">
+                <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Role yang diatur</label>
+                <select value={selectedRoleId} onChange={(e) => setSelectedRoleId(e.target.value)} className="mt-2 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm">
+                  {roles.map((role) => <option key={role.id} value={role.id}>{role.name} ({role.code})</option>)}
+                </select>
+                <p className="mt-2 text-sm text-slate-500">Role aktif: <span className="font-semibold text-slate-800">{selectedRole?.name ?? '-'}</span></p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button disabled={saving} onClick={() => void applyPreset('read')} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">Set Read Only</button>
+                  <button disabled={saving} onClick={() => void applyPreset('full')} className="rounded bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50">Set Full Access</button>
+                  <button disabled={saving} onClick={() => void applyPreset('clear')} className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50">Kosongkan</button>
+                </div>
+              </div>
+
+              <form onSubmit={createPermission} className="rounded border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">Tambah Menu Akses</p>
+                  <h4 className="font-semibold text-slate-900">Daftarkan halaman baru ke matrix permission</h4>
+                  <p className="text-sm text-slate-500">Contoh kode: <span className="font-mono">PORTAL_MAHASISWA</span>, <span className="font-mono">LAPORAN_KHS</span>, atau <span className="font-mono">SETTING_PRODI</span>.</p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[0.8fr_1fr_auto]">
+                  <input value={permissionForm.code} onChange={(e) => setPermissionForm((prev) => ({ ...prev, code: e.target.value }))} placeholder="Kode menu akses" className="rounded border border-slate-300 px-3 py-2 text-sm" />
+                  <input value={permissionForm.name} onChange={(e) => setPermissionForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nama menu/halaman" className="rounded border border-slate-300 px-3 py-2 text-sm" />
+                  <button disabled={saving} className="rounded bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50">Tambah</button>
+                </div>
+              </form>
+            </div>
+
+            <div className="overflow-x-auto rounded border border-slate-200">
+              <table className="min-w-[1180px] w-full text-sm">
+                <thead className="bg-slate-100 text-left text-xs uppercase tracking-[0.1em] text-slate-500">
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-slate-100 px-3 py-3">Menu / Permission</th>
+                    {ACCESS_ACTIONS.map((action) => <th key={action.key} className="px-2 py-3 text-center">{action.label}</th>)}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {permissions.map((permission) => {
+                    const row = rolePermissionMap.get(permission.id);
+                    return (
+                      <tr key={permission.id} className="hover:bg-slate-50">
+                        <td className="sticky left-0 z-10 bg-white px-3 py-3 hover:bg-slate-50">
+                          <p className="font-semibold text-slate-900">{permission.name}</p>
+                          <p className="font-mono text-xs text-slate-500">{permission.code}</p>
+                        </td>
+                        {ACCESS_ACTIONS.map((action) => (
+                          <td key={action.key} className="px-2 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(row?.[action.key])}
+                              disabled={saving || !selectedRoleId}
+                              onChange={(e) => void togglePermission(permission.id, action.key, e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700"
+                              aria-label={`${permission.name} ${action.label}`}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'user-roles' ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.4fr]">
+            <div className="rounded border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">Multi-role User</p>
+              <h4 className="mt-1 font-semibold text-slate-900">Tambahkan role ke user</h4>
+              <label className="mt-4 block text-sm font-medium text-slate-700">User</label>
+              <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)} className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm">
+                {users.map((user) => <option key={user.id} value={user.id}>{user.name} - {user.email}</option>)}
+              </select>
+              <label className="mt-3 block text-sm font-medium text-slate-700">Role</label>
+              <select value={selectedAssignRoleId} onChange={(e) => setSelectedAssignRoleId(e.target.value)} className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm">
+                {roles.map((role) => <option key={role.id} value={role.id}>{role.name} ({role.code})</option>)}
+              </select>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button disabled={saving} onClick={() => void assignRole(false)} className="rounded bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50">Tambah Role</button>
+                <button disabled={saving} onClick={() => void assignRole(true)} className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">Jadikan Role Utama</button>
+              </div>
+              <p className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Role utama dipakai sebagai default setelah login. Jika user punya beberapa role, halaman login tetap dapat menampilkan pilihan role.</p>
+            </div>
+
+            <div className="overflow-x-auto rounded border border-slate-200">
+              <table className="min-w-[760px] w-full text-sm">
+                <thead className="bg-slate-100 text-left text-xs uppercase tracking-[0.1em] text-slate-500">
+                  <tr>
+                    <th className="px-3 py-3">User</th>
+                    <th className="px-3 py-3">Role Utama</th>
+                    <th className="px-3 py-3">Semua Role</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.map((user) => (
+                    <tr key={user.id} className={selectedUser?.id === user.id ? 'bg-emerald-50' : 'bg-white'}>
+                      <td className="px-3 py-3">
+                        <p className="font-semibold text-slate-900">{user.name}</p>
+                        <p className="text-xs text-slate-500">{user.email}</p>
+                      </td>
+                      <td className="px-3 py-3">
+                        <AccessBadge>{user.role?.name ?? '-'}</AccessBadge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {(user.userRoles ?? []).length ? (user.userRoles ?? []).map((item) => <AccessBadge key={item.id}>{item.role.name}</AccessBadge>) : <span className="text-slate-400">Belum ada role tambahan</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded border border-slate-200">
+            <table className="min-w-[900px] w-full text-sm">
+              <thead className="bg-slate-100 text-left text-xs uppercase tracking-[0.1em] text-slate-500">
+                <tr>
+                  <th className="px-3 py-3">Waktu</th>
+                  <th className="px-3 py-3">User</th>
+                  <th className="px-3 py-3">Aksi</th>
+                  <th className="px-3 py-3">Endpoint / Entity</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">Payload</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {auditLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="px-3 py-3 text-slate-600">{new Date(log.createdAt).toLocaleString('id-ID')}</td>
+                    <td className="px-3 py-3">
+                      <p className="font-semibold text-slate-900">{log.user?.name ?? '-'}</p>
+                      <p className="text-xs text-slate-500">{log.user?.email ?? '-'}</p>
+                    </td>
+                    <td className="px-3 py-3"><AccessBadge>{log.action}</AccessBadge></td>
+                    <td className="px-3 py-3">
+                      <p className="font-mono text-xs text-slate-700">{log.entity}</p>
+                      <p className="text-xs text-slate-400">ID: {log.entityId}</p>
+                    </td>
+                    <td className="px-3 py-3">{log.metadata?.statusCode ?? '-'}</td>
+                    <td className="max-w-[280px] px-3 py-3">
+                      <pre className="max-h-24 overflow-auto rounded bg-slate-50 p-2 text-xs text-slate-600">{compactJson(log.metadata?.body ?? log.metadata?.query ?? log.metadata?.error)}</pre>
+                    </td>
+                  </tr>
+                ))}
+                {!auditLogs.length ? (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-slate-500">Belum ada audit log.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AccessStatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-slate-200 bg-white p-4">
+      <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function AccessBadge({ children }: { children: ReactNode }) {
+  return <span className="inline-flex rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">{children}</span>;
+}
+
+function compactJson(value: unknown) {
+  if (!value) return '-';
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 type CurriculumYearRow = {

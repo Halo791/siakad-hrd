@@ -106,7 +106,43 @@ export class MasterService {
   }
 
   lecturers() {
-    return this.prisma.lecturer.findMany({ include: { user: true, studyProgram: { include: { faculty: true } } }, orderBy: { name: 'asc' } });
+    return this.prisma.lecturer.findMany({
+      include: {
+        user: true,
+        studyProgram: { include: { faculty: true } },
+        structuralPositions: {
+          where: { isActive: true },
+          include: { position: true, faculty: true, studyProgram: true },
+          orderBy: { startDate: 'desc' }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  structuralPositions() {
+    return this.prisma.structuralPosition.findMany({ orderBy: [{ level: 'asc' }, { code: 'asc' }] });
+  }
+  createStructuralPosition(data: { code: string; name: string; level: string; description?: string }) {
+    return this.prisma.structuralPosition.create({ data });
+  }
+  lecturerStructuralPositions() {
+    return this.prisma.lecturerStructuralPosition.findMany({
+      include: { lecturer: true, position: true, faculty: true, studyProgram: true },
+      orderBy: [{ isActive: 'desc' }, { startDate: 'desc' }]
+    });
+  }
+  createLecturerStructuralPosition(data: {
+    lecturerId: string;
+    positionId: string;
+    facultyId?: string;
+    studyProgramId?: string;
+    decreeNumber?: string;
+    startDate?: Date;
+    endDate?: Date;
+    isActive?: boolean;
+  }) {
+    return this.prisma.lecturerStructuralPosition.create({ data });
   }
 
   studentParents() {

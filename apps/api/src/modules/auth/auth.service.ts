@@ -12,7 +12,19 @@ export class AuthService {
 
   async login(email: string, password: string, roleCode?: string) {
     const user = await this.prisma.user.findUnique({
-      include: { role: true, userRoles: { include: { role: true } } },
+      include: {
+        role: true,
+        userRoles: { include: { role: true } },
+        lecturer: {
+          include: {
+            structuralPositions: {
+              where: { isActive: true },
+              include: { position: true, faculty: true, studyProgram: true },
+              orderBy: { startDate: 'desc' }
+            }
+          }
+        }
+      },
       where: { email }
     });
     if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -20,13 +32,30 @@ export class AuthService {
     const ok = await compare(password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
-    const availableRoles = [user.role, ...user.userRoles.map((x) => x.role)];
+    const availableRoles = Array.from(
+      new Map([user.role, ...user.userRoles.map((x) => x.role)].map((role) => [role.code, role])).values()
+    );
     const selectedRole = roleCode
       ? availableRoles.find((x) => x.code === roleCode)
       : user.role;
     if (!selectedRole) throw new UnauthorizedException('Role is not assigned to this user');
 
-    const payload = { sub: user.id, role: selectedRole.code, universityId: user.universityId };
+    const structuralPositions = user.lecturer?.structuralPositions.map((item) => ({
+      id: item.id,
+      code: item.position.code,
+      name: item.position.name,
+      level: item.position.level,
+      facultyId: item.facultyId,
+      facultyName: item.faculty?.name ?? null,
+      studyProgramId: item.studyProgramId,
+      studyProgramName: item.studyProgram?.name ?? null
+    })) ?? [];
+    const payload = {
+      sub: user.id,
+      role: selectedRole.code,
+      universityId: user.universityId,
+      structuralPositionCodes: structuralPositions.map((item) => item.code)
+    };
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret',
       expiresIn: '1h'
@@ -37,12 +66,35 @@ export class AuthService {
     });
 
     await this.prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
-    return { accessToken, refreshToken, user, availableRoles: availableRoles.map((x) => ({ code: x.code, name: x.name })) };
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: { code: selectedRole.code, name: selectedRole.name },
+        structuralPositions
+      },
+      availableRoles: availableRoles.map((x) => ({ code: x.code, name: x.name }))
+    };
   }
 
   async refresh(userId: string, refreshToken: string) {
     const user = await this.prisma.user.findUnique({
-      include: { role: true, userRoles: { include: { role: true } } },
+      include: {
+        role: true,
+        userRoles: { include: { role: true } },
+        lecturer: {
+          include: {
+            structuralPositions: {
+              where: { isActive: true },
+              include: { position: true },
+              orderBy: { startDate: 'desc' }
+            }
+          }
+        }
+      },
       where: { id: userId }
     });
     if (!user || user.refreshToken !== refreshToken) throw new UnauthorizedException('Invalid token');
@@ -56,7 +108,12 @@ export class AuthService {
 
     const assignedRoles = [user.role, ...user.userRoles.map((x) => x.role)];
     const selectedRole = assignedRoles.find((x) => x.code === decoded.role) || user.role;
-    const payload = { sub: user.id, role: selectedRole.code, universityId: user.universityId };
+    const payload = {
+      sub: user.id,
+      role: selectedRole.code,
+      universityId: user.universityId,
+      structuralPositionCodes: user.lecturer?.structuralPositions.map((item) => item.position.code) ?? []
+    };
     return {
       accessToken: await this.jwt.signAsync(payload, {
         secret: process.env.JWT_ACCESS_SECRET || 'dev-access-secret',

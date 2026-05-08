@@ -8,6 +8,11 @@ class AssignRoleDto {
   @IsString() roleId!: string;
 }
 
+class CreatePermissionDto {
+  @IsString() code!: string;
+  @IsString() name!: string;
+}
+
 class SetRolePermissionDto {
   @IsString() roleId!: string;
   @IsString() permissionId!: string;
@@ -35,6 +40,9 @@ export class AccessController {
 
   @RequirePermission('MASTER_FACULTY', 'read')
   @Get('permissions') permissions() { return this.service.permissions(); }
+
+  @RequirePermission('MASTER_FACULTY', 'update')
+  @Post('permissions') createPermission(@Body() dto: CreatePermissionDto) { return this.service.createPermission(dto.code, dto.name); }
 
   @RequirePermission('MASTER_FACULTY', 'read')
   @Get('users') users() { return this.service.users(); }

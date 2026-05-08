@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { MasterService } from './master.service';
 
@@ -78,6 +78,24 @@ class CreateStudentParentDto {
   @IsString() name!: string;
   @IsString() relation!: string;
   @IsOptional() @IsString() phone?: string;
+}
+
+class CreateStructuralPositionDto {
+  @IsString() code!: string;
+  @IsString() name!: string;
+  @IsString() level!: string;
+  @IsOptional() @IsString() description?: string;
+}
+
+class CreateLecturerStructuralPositionDto {
+  @IsString() lecturerId!: string;
+  @IsString() positionId!: string;
+  @IsOptional() @IsString() facultyId?: string;
+  @IsOptional() @IsString() studyProgramId?: string;
+  @IsOptional() @IsString() decreeNumber?: string;
+  @IsOptional() @IsString() startDate?: string;
+  @IsOptional() @IsString() endDate?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 class UpdateUniversityDto {
@@ -213,6 +231,27 @@ export class MasterController {
 
   @RequirePermission('MASTER_STUDY_PROGRAM', 'read')
   @Get('lecturers') lecturers() { return this.service.lecturers(); }
+
+  @RequirePermission('MASTER_STUDY_PROGRAM', 'read')
+  @Get('structural-positions') structuralPositions() { return this.service.structuralPositions(); }
+
+  @RequirePermission('MASTER_STUDY_PROGRAM', 'insert')
+  @Post('structural-positions')
+  createStructuralPosition(@Body() dto: CreateStructuralPositionDto) { return this.service.createStructuralPosition(dto); }
+
+  @RequirePermission('MASTER_STUDY_PROGRAM', 'read')
+  @Get('lecturer-structural-positions')
+  lecturerStructuralPositions() { return this.service.lecturerStructuralPositions(); }
+
+  @RequirePermission('MASTER_STUDY_PROGRAM', 'insert')
+  @Post('lecturer-structural-positions')
+  createLecturerStructuralPosition(@Body() dto: CreateLecturerStructuralPositionDto) {
+    return this.service.createLecturerStructuralPosition({
+      ...dto,
+      startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+      endDate: dto.endDate ? new Date(dto.endDate) : undefined
+    });
+  }
 
   @RequirePermission('MASTER_STUDY_PROGRAM', 'insert')
   @Post('lecturers') createLecturer(@Body() dto: CreateLecturerDto) { return this.service.createLecturer(dto); }

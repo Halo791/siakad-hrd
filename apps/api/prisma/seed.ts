@@ -218,6 +218,49 @@ async function main() {
     create: { userId: dosenUser.id, studyProgramId: prodi.id, nidn: '00112233', name: 'Dosen Satu' }
   });
 
+  const structuralPositions = [
+    { code: 'REKTOR', name: 'Rektor', level: 'UNIVERSITAS' },
+    { code: 'WAKIL_REKTOR', name: 'Wakil Rektor', level: 'UNIVERSITAS' },
+    { code: 'DEKAN', name: 'Dekan', level: 'FAKULTAS' },
+    { code: 'WAKIL_DEKAN', name: 'Wakil Dekan', level: 'FAKULTAS' },
+    { code: 'KAPRODI', name: 'Ketua Program Studi', level: 'PRODI' },
+    { code: 'SEKPRODI', name: 'Sekretaris Program Studi', level: 'PRODI' },
+    { code: 'KETUA_LPM', name: 'Ketua LPM', level: 'UNIVERSITAS' }
+  ];
+
+  for (const item of structuralPositions) {
+    await prisma.structuralPosition.upsert({
+      where: { code: item.code },
+      update: { name: item.name, level: item.level },
+      create: item
+    });
+  }
+
+  const kaprodiPosition = await prisma.structuralPosition.findUniqueOrThrow({ where: { code: 'KAPRODI' } });
+  await prisma.lecturerStructuralPosition.upsert({
+    where: { id: 'lecturer_structural_kaprodi_if' },
+    update: {
+      lecturerId: lecturer.id,
+      positionId: kaprodiPosition.id,
+      facultyId: faculty.id,
+      studyProgramId: prodi.id,
+      decreeNumber: 'SK-KAPRODI-IF-2026',
+      startDate: new Date('2026-01-01'),
+      endDate: null,
+      isActive: true
+    },
+    create: {
+      id: 'lecturer_structural_kaprodi_if',
+      lecturerId: lecturer.id,
+      positionId: kaprodiPosition.id,
+      facultyId: faculty.id,
+      studyProgramId: prodi.id,
+      decreeNumber: 'SK-KAPRODI-IF-2026',
+      startDate: new Date('2026-01-01'),
+      isActive: true
+    }
+  });
+
   const student = await prisma.student.upsert({
     where: { userId: mahasiswaUser.id },
     update: { currentSemester: 1 },

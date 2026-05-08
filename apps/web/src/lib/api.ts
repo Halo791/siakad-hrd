@@ -1,16 +1,29 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:3101/api/v1';
 
+export type RoleOption = { code: string; name: string };
+export type StructuralPositionOption = {
+  id: string;
+  code: string;
+  name: string;
+  level: string;
+  facultyId?: string | null;
+  facultyName?: string | null;
+  studyProgramId?: string | null;
+  studyProgramName?: string | null;
+};
+
 export type LoginResponse = {
   accessToken: string;
   refreshToken: string;
-  user: { id: string; name: string; email: string; role: { code: string; name: string } };
+  user: { id: string; name: string; email: string; role: RoleOption; structuralPositions?: StructuralPositionOption[] };
+  availableRoles: RoleOption[];
 };
 
-export async function login(email: string, password: string): Promise<LoginResponse> {
+export async function login(email: string, password: string, roleCode?: string): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password, roleCode })
   });
   if (!res.ok) throw new Error('Login gagal');
   return res.json();

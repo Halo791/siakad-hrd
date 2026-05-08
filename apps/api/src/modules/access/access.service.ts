@@ -9,6 +9,15 @@ export class AccessService {
   permissions() { return this.prisma.permission.findMany({ orderBy: { code: 'asc' } }); }
   users() { return this.prisma.user.findMany({ include: { role: true, userRoles: { include: { role: true } } } }); }
 
+  createPermission(code: string, name: string) {
+    const normalizedCode = code.trim().toUpperCase().replace(/\s+/g, '_');
+    return this.prisma.permission.upsert({
+      where: { code: normalizedCode },
+      update: { name },
+      create: { code: normalizedCode, name }
+    });
+  }
+
   async assignRole(userId: string, roleId: string) {
     return this.prisma.userRole.upsert({
       where: { userId_roleId: { userId, roleId } },

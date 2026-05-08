@@ -124,6 +124,7 @@ model Faculty {
   leaderPhone   String?
   university    University     @relation(fields: [universityId], references: [id])
   studyPrograms StudyProgram[]
+  structuralAssignments LecturerStructuralPosition[]
 
   @@unique([universityId, code])
 }
@@ -143,6 +144,7 @@ model StudyProgram {
   lecturers      Lecturer[]
   uktRates       UktRate[]
   settings       StudyProgramSetting[]
+  structuralAssignments LecturerStructuralPosition[]
 
   @@unique([facultyId, code])
 }
@@ -252,6 +254,35 @@ model Lecturer {
   user       User           @relation(fields: [userId], references: [id])
   studyProgram StudyProgram? @relation(fields: [studyProgramId], references: [id])
   classLinks ClassLecturer[]
+  structuralPositions LecturerStructuralPosition[]
+}
+
+model StructuralPosition {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String
+  level       String
+  description String?
+  assignments LecturerStructuralPosition[]
+}
+
+model LecturerStructuralPosition {
+  id             String     @id @default(cuid())
+  lecturerId     String
+  positionId     String
+  facultyId      String?
+  studyProgramId String?
+  decreeNumber   String?
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean    @default(true)
+  lecturer       Lecturer   @relation(fields: [lecturerId], references: [id])
+  position       StructuralPosition @relation(fields: [positionId], references: [id])
+  faculty        Faculty?   @relation(fields: [facultyId], references: [id])
+  studyProgram   StudyProgram? @relation(fields: [studyProgramId], references: [id])
+
+  @@index([lecturerId, isActive])
+  @@index([positionId, isActive])
 }
 
 model StudentParent {
