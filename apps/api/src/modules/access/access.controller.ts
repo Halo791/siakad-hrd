@@ -1,7 +1,15 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { AccessService } from './access.service';
+
+class CreateUserDto {
+  @IsString() name!: string;
+  @IsEmail() email!: string;
+  @MinLength(8) password!: string;
+  @IsString() roleId!: string;
+  @IsOptional() @IsString() universityId?: string;
+}
 
 class AssignRoleDto {
   @IsString() userId!: string;
@@ -46,6 +54,9 @@ export class AccessController {
 
   @RequirePermission('MASTER_FACULTY', 'read')
   @Get('users') users() { return this.service.users(); }
+
+  @RequirePermission('MASTER_FACULTY', 'insert')
+  @Post('users') createUser(@Body() dto: CreateUserDto) { return this.service.createUser(dto); }
 
   @RequirePermission('MASTER_FACULTY', 'update')
   @Post('users/assign-role') assignRole(@Body() dto: AssignRoleDto) { return this.service.assignRole(dto.userId, dto.roleId); }

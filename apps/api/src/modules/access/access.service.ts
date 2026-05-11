@@ -1,13 +1,75 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { hash } from 'bcrypt';
 import { PrismaService } from '../../prisma.service';
+
+const ROLE_ORDER = [
+  'SUPER_ADMIN',
+  'ADMIN_UNIVERSITAS',
+  'ADMIN_FAKULTAS',
+  'ADMIN_PRODI',
+  'ADMIN_AKADEMIK',
+  'ADMIN_PMB',
+  'ADMIN_KEUANGAN',
+  'DOSEN',
+  'DOSEN_PA',
+  'KAPRODI',
+  'DEKAN',
+  'MAHASISWA',
+  'ORANG_TUA',
+  'ALUMNI'
+];
 
 @Injectable()
 export class AccessService {
   constructor(private readonly prisma: PrismaService) {}
 
-  roles() { return this.prisma.role.findMany({ orderBy: { code: 'asc' } }); }
+  async roles() {
+    const roles = await this.prisma.role.findMany();
+    return roles.sort((a, b) => {
+      const aIndex = ROLE_ORDER.indexOf(a.code);
+      const bIndex = ROLE_ORDER.indexOf(b.code);
+      return (aIndex === -1 ? ROLE_ORDER.length : aIndex) - (bIndex === -1 ? ROLE_ORDER.length : bIndex);
+    });
+  }
   permissions() { return this.prisma.permission.findMany({ orderBy: { code: 'asc' } }); }
-  users() { return this.prisma.user.findMany({ include: { role: true, userRoles: { include: { role: true } } } }); }
+  users() {
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { role: true, userRoles: { include: { role: true } } }
+    });
+  }
+
+  async createUser(data: { name: string; email: string; password: string; roleId: string; universityId?: string }) {
+    const email = data.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('Email user sudah terdaftar');
+
+    const university = data.universityId
+      ? await this.prisma.university.findUnique({ where: { id: data.universityId } })
+      : await this.prisma.university.findFirst({ orderBy: { code: 'asc' } });
+    if (!university) throw new BadRequestException('Data universitas belum tersedia');
+
+    const role = await this.prisma.role.findUnique({ where: { id: data.roleId } });
+    if (!role) throw new BadRequestException('Role tidak ditemukan');
+
+    const passwordHash = await hash(data.password, 10);
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          universityId: university.id,
+          roleId: role.id,
+          name: data.name.trim(),
+          email,
+          passwordHash
+        }
+      });
+      await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
+      return tx.user.findUnique({
+        where: { id: user.id },
+        include: { role: true, userRoles: { include: { role: true } } }
+      });
+    });
+  }
 
   createPermission(code: string, name: string) {
     const normalizedCode = code.trim().toUpperCase().replace(/\s+/g, '_');

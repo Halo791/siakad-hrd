@@ -230,6 +230,9 @@ export class MasterController {
   @Get('students') students() { return this.service.students(); }
 
   @RequirePermission('MASTER_STUDY_PROGRAM', 'read')
+  @Get('students/:id') student(@Param('id') id: string) { return this.service.student(id); }
+
+  @RequirePermission('MASTER_STUDY_PROGRAM', 'read')
   @Get('lecturers') lecturers() { return this.service.lecturers(); }
 
   @RequirePermission('MASTER_STUDY_PROGRAM', 'read')

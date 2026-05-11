@@ -11,11 +11,24 @@ async function main() {
   });
 
   const roles = [
-    'SUPER_ADMIN','ADMIN_UNIVERSITAS','ADMIN_FAKULTAS','ADMIN_PRODI','ADMIN_AKADEMIK','ADMIN_PMB','ADMIN_KEUANGAN','DOSEN','DOSEN_PA','KAPRODI','DEKAN','MAHASISWA','ORANG_TUA','ALUMNI'
-  ];
+    ['SUPER_ADMIN', 'Super Admin'],
+    ['ADMIN_UNIVERSITAS', 'Admin Universitas'],
+    ['ADMIN_FAKULTAS', 'Admin Fakultas'],
+    ['ADMIN_PRODI', 'Admin Prodi'],
+    ['ADMIN_AKADEMIK', 'Admin Akademik'],
+    ['ADMIN_PMB', 'Admin PMB'],
+    ['ADMIN_KEUANGAN', 'Admin Keuangan'],
+    ['DOSEN', 'Dosen'],
+    ['DOSEN_PA', 'Dosen Pembimbing Akademik'],
+    ['KAPRODI', 'Kaprodi'],
+    ['DEKAN', 'Dekan'],
+    ['MAHASISWA', 'Mahasiswa'],
+    ['ORANG_TUA', 'Orang Tua'],
+    ['ALUMNI', 'Alumni']
+  ] as const;
 
-  for (const code of roles) {
-    await prisma.role.upsert({ where: { code }, update: {}, create: { code, name: code.replaceAll('_', ' ') } });
+  for (const [code, name] of roles) {
+    await prisma.role.upsert({ where: { code }, update: { name }, create: { code, name } });
   }
 
   const permissions = [

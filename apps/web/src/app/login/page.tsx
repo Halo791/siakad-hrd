@@ -9,13 +9,13 @@ const demoRoles: RoleOption[] = [
   { code: 'SUPER_ADMIN', name: 'Super Admin' },
   { code: 'ADMIN_AKADEMIK', name: 'Admin Akademik' },
   { code: 'DOSEN', name: 'Dosen' },
-  { code: 'DOSEN_PA', name: 'Dosen PA' },
+  { code: 'DOSEN_PA', name: 'Dosen Pembimbing Akademik' },
   { code: 'MAHASISWA', name: 'Mahasiswa' }
 ];
 
 const quickAccounts = [
   { label: 'Super Admin', email: 'superadmin@siakad.local', hint: 'akses penuh admin' },
-  { label: 'Dosen Multi-role', email: 'dosen1@siakad.local', hint: 'Dosen + Dosen PA' },
+  { label: 'Dosen Multi-role', email: 'dosen1@siakad.local', hint: 'Dosen + Dosen Pembimbing Akademik' },
   { label: 'Mahasiswa', email: 'mhs1@siakad.local', hint: 'portal mahasiswa' }
 ];
 

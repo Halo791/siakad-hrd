@@ -101,7 +101,29 @@ export class MasterService {
 
   students() {
     return this.prisma.student.findMany({
-      include: { studyProgram: true, user: true, parents: true, studentStatus: true, studentClass: true, studySystem: true }
+      include: {
+        studyProgram: { include: { faculty: true, degreeLevelRef: true } },
+        user: { include: { role: true, userRoles: { include: { role: true } } } },
+        parents: true,
+        studentStatus: true,
+        studentClass: true,
+        studySystem: true
+      },
+      orderBy: { nim: 'asc' }
+    });
+  }
+
+  student(id: string) {
+    return this.prisma.student.findUniqueOrThrow({
+      where: { id },
+      include: {
+        studyProgram: { include: { faculty: true, degreeLevelRef: true } },
+        user: { include: { role: true, userRoles: { include: { role: true } } } },
+        parents: true,
+        studentStatus: true,
+        studentClass: true,
+        studySystem: true
+      }
     });
   }
 
@@ -330,7 +352,16 @@ export class MasterService {
       return tx.student.findUniqueOrThrow({ where: { id }, include: { user: true, studyProgram: true } });
     });
   }
-  deleteStudent(id: string) { return this.prisma.student.delete({ where: { id } }); }
+  async deleteStudent(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const student = await tx.student.findUniqueOrThrow({ where: { id }, select: { userId: true } });
+      await tx.studentParent.deleteMany({ where: { studentId: id } });
+      await tx.studentDocument.deleteMany({ where: { studentId: id } });
+      await tx.student.delete({ where: { id } });
+      await tx.userRole.deleteMany({ where: { userId: student.userId } });
+      return tx.user.delete({ where: { id: student.userId } });
+    });
+  }
 
   studySystems() { return this.prisma.studySystemRef.findMany(); }
   createStudySystem(data: { code: string; name: string }) { return this.prisma.studySystemRef.create({ data }); }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { DashboardShell, type DashboardMenuGroup } from '../../components/dashboard-shell';
-import { clearSession, getSecureJson, getToken, secureGet, securePost } from '../../lib/api';
+import { clearSession, getSecureJson, getToken, secureDelete, secureGet, securePatch, securePost } from '../../lib/api';
 
 type AdminSummary = { students: number; classes: number; submittedKrs: number };
 type RefItem = { id: string; code: string; name: string };
@@ -28,8 +28,33 @@ type StudyProgram = RefItem & {
 };
 type AcademicYear = RefItem;
 type AcademicPeriod = { id: string; code: string; name: string; academicYearId: string; startDate: string; endDate: string };
-type Student = { id: string; studyProgramId?: string; nim: string; name: string; status: string; currentSemester?: number };
-type ParentRow = { id: string; name: string; relation: string; studentId: string };
+type Student = {
+  id: string;
+  userId?: string;
+  studyProgramId?: string;
+  studentClassId?: string | null;
+  studentStatusId?: string | null;
+  studySystemId?: string | null;
+  nim: string;
+  name: string;
+  status: string;
+  currentSemester?: number;
+  user?: {
+    id: string;
+    universityId?: string;
+    name: string;
+    email: string;
+    status?: string;
+    role?: RefItem | null;
+    userRoles?: Array<{ role?: RefItem | null }>;
+  } | null;
+  studyProgram?: (StudyProgram & { faculty?: Faculty | null; degreeLevelRef?: RefItem | null }) | null;
+  studentClass?: RefItem | null;
+  studentStatus?: RefItem | null;
+  studySystem?: RefItem | null;
+  parents?: ParentRow[];
+};
+type ParentRow = { id: string; name: string; relation: string; studentId: string; phone?: string | null };
 type LecturerRow = { id: string; name: string; nidn: string; studyProgramId?: string | null; studyProgram?: StudyProgram | null };
 type MasterDataBag = {
   universities: University[];
@@ -62,7 +87,7 @@ type MasterKey =
 type MasterView = 'list' | 'input' | 'study-program-detail';
 type AdminWorkspace = 'master-data' | 'curriculum-module' | 'access-control';
 type CurriculumTab = 'years' | 'courses' | 'copy-courses' | 'program-curriculum' | 'grading-scale';
-type AccessTab = 'role-permissions' | 'user-roles' | 'audit-logs';
+type AccessTab = 'role-permissions' | 'register-user' | 'user-roles' | 'audit-logs';
 type AccessActionKey =
   | 'canRead'
   | 'canInsert'
@@ -121,6 +146,7 @@ export default function AdminPage() {
   const [accessTab, setAccessTab] = useState<AccessTab>('role-permissions');
   const [selectedStudyProgramId, setSelectedStudyProgramId] = useState('');
   const [loadingMaster, setLoadingMaster] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState('');
 
   const [universities, setUniversities] = useState<University[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
@@ -171,6 +197,7 @@ export default function AdminPage() {
     setCurriculumTab(targetTab);
     setMasterView('list');
     setSelectedStudyProgramId('');
+    setEditingStudentId('');
     setError('');
     setSuccess('');
   };
@@ -179,6 +206,7 @@ export default function AdminPage() {
     setAccessTab(targetTab);
     setMasterView('list');
     setSelectedStudyProgramId('');
+    setEditingStudentId('');
     setError('');
     setSuccess('');
   };
@@ -187,6 +215,7 @@ export default function AdminPage() {
     setTab(targetTab);
     setMasterView(view);
     setSelectedStudyProgramId('');
+    setEditingStudentId('');
     setForm({});
     setError('');
     setSuccess('');
@@ -550,6 +579,7 @@ export default function AdminPage() {
           active: activeWorkspace === 'access-control',
           children: [
             { label: 'Role & Permission', active: activeWorkspace === 'access-control' && accessTab === 'role-permissions', onClick: () => openAccessTab('role-permissions') },
+            { label: 'Register User', active: activeWorkspace === 'access-control' && accessTab === 'register-user', onClick: () => openAccessTab('register-user') },
             { label: 'Assign Role User', active: activeWorkspace === 'access-control' && accessTab === 'user-roles', onClick: () => openAccessTab('user-roles') },
             { label: 'Audit Log', active: activeWorkspace === 'access-control' && accessTab === 'audit-logs', onClick: () => openAccessTab('audit-logs') }
           ]
@@ -702,6 +732,38 @@ export default function AdminPage() {
     }
   }
 
+  function openInputForm() {
+    setEditingStudentId('');
+    setForm({});
+    setError('');
+    setSuccess('');
+    setMasterView('input');
+  }
+
+  function editStudent(student: Student) {
+    setTab('students');
+    setEditingStudentId(student.id);
+    setForm(studentToForm(student, universities));
+    setError('');
+    setSuccess('');
+    setMasterView('input');
+  }
+
+  async function deleteStudentRecord(student: Student) {
+    const approved = window.confirm(`Hapus data mahasiswa ${student.nim} - ${student.name}? Data orang tua dan akun login mahasiswa juga akan dihapus.`);
+    if (!approved) return;
+
+    setError('');
+    setSuccess('');
+    try {
+      await secureDelete(`/master/students/${student.id}`);
+      setSuccess(`Mahasiswa ${student.nim} - ${student.name} berhasil dihapus`);
+      await loadMasterData();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menghapus mahasiswa');
+    }
+  }
+
   async function submitCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
@@ -751,8 +813,7 @@ export default function AdminPage() {
         });
       }
       if (tab === 'students') {
-        await securePost('/master/students', {
-          universityId: form.universityId,
+        const studentPayload = {
           studyProgramId: form.studyProgramId,
           nim: form.nim,
           name: form.name,
@@ -762,7 +823,16 @@ export default function AdminPage() {
           studentClassId: form.studentClassId || undefined,
           studentStatusId: form.studentStatusId || undefined,
           studySystemId: form.studySystemId || undefined
-        });
+        };
+
+        if (editingStudentId) {
+          await securePatch(`/master/students/${editingStudentId}`, studentPayload);
+        } else {
+          await securePost('/master/students', {
+            universityId: form.universityId,
+            ...studentPayload
+          });
+        }
       }
       if (tab === 'student-parents') {
         await securePost('/master/student-parents', {
@@ -772,7 +842,8 @@ export default function AdminPage() {
           phone: form.phone || undefined
         });
       }
-      setSuccess('Data berhasil disimpan');
+      setSuccess(editingStudentId ? 'Data berhasil diperbarui' : 'Data berhasil disimpan');
+      setEditingStudentId('');
       setForm({});
       await loadMasterData();
       setMasterView('list');
@@ -822,7 +893,7 @@ export default function AdminPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={() => setMasterView('list')} className={`rounded border px-3 py-2 text-sm font-medium ${masterView === 'list' ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 hover:bg-slate-50'}`}>Daftar Data</button>
-                  <button onClick={() => { setMasterView('input'); setError(''); setSuccess(''); }} className={`rounded border px-3 py-2 text-sm font-medium ${masterView === 'input' ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 hover:bg-slate-50'}`}>Input Data</button>
+                  <button onClick={openInputForm} className={`rounded border px-3 py-2 text-sm font-medium ${masterView === 'input' ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 hover:bg-slate-50'}`}>Input Data</button>
                   <button onClick={() => void loadMasterData()} className="rounded border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50">Muat Ulang</button>
                 </div>
               </div>
@@ -841,16 +912,16 @@ export default function AdminPage() {
               ) : masterView === 'input' ? (
                 <form className="mx-auto max-w-3xl rounded border border-slate-200 bg-slate-50 p-4" onSubmit={submitCreate}>
                   <div className="mb-4 border-b border-slate-200 pb-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Tambah Baru</p>
-                    <h4 className="mt-1 font-semibold text-slate-900">Input {activeMaster.label}</h4>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{editingStudentId ? 'Ubah Data' : 'Tambah Baru'}</p>
+                    <h4 className="mt-1 font-semibold text-slate-900">{editingStudentId ? 'Edit' : 'Input'} {activeMaster.label}</h4>
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <FormFields tab={tab} form={form} setForm={setForm} refs={{ universities, faculties, degreeLevels, academicYears, studyPrograms, studentClasses, studentStatuses, studySystems, students }} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Simpan</button>
+                    <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">{editingStudentId ? 'Update' : 'Simpan'}</button>
                     <button type="button" onClick={() => setForm({})} className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Bersihkan</button>
-                    <button type="button" onClick={() => setMasterView('list')} className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Kembali ke Daftar</button>
+                    <button type="button" onClick={() => { setEditingStudentId(''); setMasterView('list'); }} className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Kembali ke Daftar</button>
                   </div>
                   {error ? <p className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</p> : null}
                   {success ? <p className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p> : null}
@@ -861,7 +932,7 @@ export default function AdminPage() {
                     <h4 className="font-semibold text-slate-900">Daftar {activeMaster.label}</h4>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-slate-500">{getTabCount(tab, masterData)} baris</span>
-                      <button onClick={() => { setMasterView('input'); setForm({}); }} className="rounded bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800">Tambah Data</button>
+                      <button onClick={openInputForm} className="rounded bg-teal-700 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-800">Tambah Data</button>
                     </div>
                   </div>
                   {success ? <p className="mb-3 rounded border border-emerald-200 bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p> : null}
@@ -874,6 +945,8 @@ export default function AdminPage() {
                         setSelectedStudyProgramId(id);
                         setMasterView('study-program-detail');
                       }}
+                      onEditStudent={editStudent}
+                      onDeleteStudent={(student) => void deleteStudentRecord(student)}
                     />
                   )}
                 </div>
@@ -895,6 +968,7 @@ function LoginPrompt() {
 
 const ACCESS_TABS: Array<{ key: AccessTab; label: string; description: string }> = [
   { key: 'role-permissions', label: 'Role & Permission', description: 'Atur hak akses menu per role' },
+  { key: 'register-user', label: 'Register User', description: 'Buat akun user baru' },
   { key: 'user-roles', label: 'Assign Role User', description: 'Tambahkan multi-role dan role utama user' },
   { key: 'audit-logs', label: 'Audit Log', description: 'Riwayat perubahan akses dan aktivitas user' }
 ];
@@ -930,6 +1004,7 @@ function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; o
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedAssignRoleId, setSelectedAssignRoleId] = useState('');
   const [permissionForm, setPermissionForm] = useState({ code: '', name: '' });
+  const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: 'Admin@12345', roleId: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -963,6 +1038,12 @@ function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; o
       setAuditLogs(logRows);
       setSelectedRoleId((current) => current && roleRows.some((role) => role.id === current) ? current : roleRows[0]?.id ?? '');
       setSelectedAssignRoleId((current) => current && roleRows.some((role) => role.id === current) ? current : roleRows[0]?.id ?? '');
+      setRegisterForm((current) => ({
+        ...current,
+        roleId: current.roleId && roleRows.some((role) => role.id === current.roleId)
+          ? current.roleId
+          : roleRows.find((role) => role.code === 'MAHASISWA')?.id ?? roleRows[0]?.id ?? ''
+      }));
       setSelectedUserId((current) => current && userRows.some((user) => user.id === current) ? current : userRows[0]?.id ?? '');
     } catch (e) {
       setAccessError(e instanceof Error ? e.message : 'Gagal memuat data hak akses');
@@ -1057,6 +1138,35 @@ function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; o
     }
   }
 
+  async function createUser(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const name = registerForm.name.trim();
+    const email = registerForm.email.trim().toLowerCase();
+    const password = registerForm.password;
+    if (!name || !email || !password || !registerForm.roleId) {
+      setAccessError('Nama, email, password, dan role awal wajib diisi.');
+      return;
+    }
+    setSaving(true);
+    setAccessError('');
+    setNotice('');
+    try {
+      await securePost<AccessUser>('/access/users', {
+        name,
+        email,
+        password,
+        roleId: registerForm.roleId
+      });
+      setRegisterForm((current) => ({ name: '', email: '', password: 'Admin@12345', roleId: current.roleId }));
+      await loadAccessBase();
+      setNotice('User baru berhasil dibuat. Role-nya bisa disesuaikan lagi di tab Assign Role User.');
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Gagal membuat user baru');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function assignRole(makePrimary: boolean) {
     if (!selectedUserId || !selectedAssignRoleId) {
       setAccessError('Pilih user dan role terlebih dahulu.');
@@ -1099,8 +1209,9 @@ function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; o
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 border-b border-slate-200 p-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 border-b border-slate-200 p-4 lg:grid-cols-4">
         <AccessStatCard label="Role tersedia" value={String(roles.length)} />
+        <AccessStatCard label="User terdaftar" value={String(users.length)} />
         <AccessStatCard label="Menu akses" value={String(permissions.length)} />
         <AccessStatCard label="Aksi aktif role terpilih" value={String(activeActions)} />
       </div>
@@ -1187,6 +1298,91 @@ function AccessControlPage({ activeTab, onTabChange }: { activeTab: AccessTab; o
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        ) : activeTab === 'register-user' ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.4fr]">
+            <form onSubmit={createUser} className="rounded border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">Register User Baru</p>
+              <h4 className="mt-1 font-semibold text-slate-900">Buat akun login untuk civitas</h4>
+              <p className="mt-1 text-sm text-slate-500">Role awal diperlukan oleh sistem, lalu Super Admin bisa mengatur ulang role dan multi-role di tab Assign Role User.</p>
+
+              <label className="mt-4 block text-sm font-medium text-slate-700">Nama Lengkap</label>
+              <input
+                value={registerForm.name}
+                onChange={(e) => setRegisterForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Nama user"
+                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+
+              <label className="mt-3 block text-sm font-medium text-slate-700">Email Login</label>
+              <input
+                type="email"
+                value={registerForm.email}
+                onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="nama@kampus.ac.id"
+                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+
+              <label className="mt-3 block text-sm font-medium text-slate-700">Password Awal</label>
+              <input
+                type="text"
+                value={registerForm.password}
+                onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
+                placeholder="Minimal 8 karakter"
+                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+              />
+
+              <label className="mt-3 block text-sm font-medium text-slate-700">Role Awal</label>
+              <select
+                value={registerForm.roleId}
+                onChange={(e) => setRegisterForm((prev) => ({ ...prev, roleId: e.target.value }))}
+                className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+              </select>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button disabled={saving} className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50">Register User</button>
+                <button
+                  type="button"
+                  onClick={() => setRegisterForm((prev) => ({ name: '', email: '', password: 'Admin@12345', roleId: prev.roleId }))}
+                  className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+                >
+                  Bersihkan
+                </button>
+              </div>
+            </form>
+
+            <div className="rounded border border-slate-200 bg-white p-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Alur Super Admin</p>
+                <h4 className="font-semibold text-slate-900">Register lalu atur role</h4>
+                <p className="text-sm text-slate-500">Setelah user dibuat, gunakan tab Assign Role User untuk menambahkan role lain atau mengganti role utama.</p>
+              </div>
+              <div className="mt-4 overflow-x-auto rounded border border-slate-200">
+                <table className="min-w-[620px] w-full text-sm">
+                  <thead className="bg-slate-100 text-left text-xs uppercase tracking-[0.1em] text-slate-500">
+                    <tr>
+                      <th className="px-3 py-3">User Terbaru</th>
+                      <th className="px-3 py-3">Role Utama</th>
+                      <th className="px-3 py-3">Jumlah Role</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {users.slice(0, 8).map((user) => (
+                      <tr key={user.id}>
+                        <td className="px-3 py-3">
+                          <p className="font-semibold text-slate-900">{user.name}</p>
+                          <p className="text-xs text-slate-500">{user.email}</p>
+                        </td>
+                        <td className="px-3 py-3"><AccessBadge>{user.role?.name ?? '-'}</AccessBadge></td>
+                        <td className="px-3 py-3 text-slate-600">{user.userRoles?.length ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : activeTab === 'user-roles' ? (
@@ -2182,16 +2378,36 @@ function findStudentName(items: Student[], id?: string) {
   return student ? `${student.nim} - ${student.name}` : '-';
 }
 
+function studentToForm(student: Student, universities: University[]): Record<string, string> {
+  return {
+    universityId: student.user?.universityId || universities[0]?.id || '',
+    studyProgramId: student.studyProgramId || '',
+    nim: student.nim || '',
+    name: student.name || '',
+    email: student.user?.email || '',
+    status: student.status || 'AKTIF',
+    currentSemester: String(student.currentSemester || 1),
+    studentClassId: student.studentClassId || '',
+    studentStatusId: student.studentStatusId || '',
+    studySystemId: student.studySystemId || ''
+  };
+}
+
 function DataTable({
   tab,
   data,
-  onOpenStudyProgramDetail
+  onOpenStudyProgramDetail,
+  onEditStudent,
+  onDeleteStudent
 }: {
   tab: MasterKey;
   data: MasterDataBag;
   onOpenStudyProgramDetail?: (id: string) => void;
+  onEditStudent?: (student: Student) => void;
+  onDeleteStudent?: (student: Student) => void;
 }) {
   if (tab === 'faculties') return <FacultyDataView data={data} onOpenStudyProgramDetail={onOpenStudyProgramDetail} />;
+  if (tab === 'students') return <StudentDataView data={data} onEditStudent={onEditStudent} onDeleteStudent={onDeleteStudent} />;
 
   const rows = getRows(tab, data);
   const headers = Object.keys(rows[0] || {});
@@ -2216,6 +2432,244 @@ function DataTable({
       </table>
     </div>
   );
+}
+
+function StudentDataView({
+  data,
+  onEditStudent,
+  onDeleteStudent
+}: {
+  data: MasterDataBag;
+  onEditStudent?: (student: Student) => void;
+  onDeleteStudent?: (student: Student) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [studyProgramFilter, setStudyProgramFilter] = useState('ALL');
+  const [semesterFilter, setSemesterFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const students = data.students;
+  const semesters = Array.from(new Set(students.map((student) => student.currentSemester || 1))).sort((a, b) => a - b);
+  const activeCount = students.filter((student) => normalizeStatus(student.status) === 'AKTIF' || normalizeStatus(student.studentStatus?.code) === 'AKTIF').length;
+  const withParentsCount = students.filter((student) => (student.parents || []).length > 0).length;
+  const filteredStudents = students.filter((student) => {
+    const searchTarget = [
+      student.nim,
+      student.name,
+      student.user?.email,
+      student.studyProgram?.name,
+      student.studyProgram?.faculty?.name,
+      student.studentClass?.name,
+      student.studySystem?.name,
+      student.parents?.map((parent) => parent.name).join(' ')
+    ].join(' ').toLowerCase();
+    const matchesQuery = searchTarget.includes(query.toLowerCase());
+    const matchesStudyProgram = studyProgramFilter === 'ALL' || student.studyProgramId === studyProgramFilter;
+    const matchesSemester = semesterFilter === 'ALL' || String(student.currentSemester || 1) === semesterFilter;
+    const statusValue = normalizeStatus(student.studentStatus?.code || student.status);
+    const matchesStatus = statusFilter === 'ALL' || statusValue === statusFilter;
+    return matchesQuery && matchesStudyProgram && matchesSemester && matchesStatus;
+  });
+
+  if (students.length === 0) {
+    return <p className="rounded border border-dashed border-slate-300 p-4 text-sm text-slate-500">Belum ada data mahasiswa.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <MiniMetric label="Total Mahasiswa" value={String(students.length)} />
+        <MiniMetric label="Mahasiswa Aktif" value={String(activeCount)} />
+        <MiniMetric label="Prodi Terisi" value={String(new Set(students.map((student) => student.studyProgramId)).size)} />
+        <MiniMetric label="Data Orang Tua" value={`${withParentsCount}/${students.length}`} />
+      </div>
+
+      <div className="rounded border border-slate-200 bg-slate-50 p-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr_0.7fr_0.8fr]">
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Cari Mahasiswa</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari NIM, nama, email, fakultas, prodi, orang tua..."
+              className="w-full rounded border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Program Studi</span>
+            <select
+              value={studyProgramFilter}
+              onChange={(e) => setStudyProgramFilter(e.target.value)}
+              className="w-full rounded border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            >
+              <option value="ALL">Semua Prodi</option>
+              {data.studyPrograms.map((program) => <option key={program.id} value={program.id}>{program.code} - {program.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Semester</span>
+            <select
+              value={semesterFilter}
+              onChange={(e) => setSemesterFilter(e.target.value)}
+              className="w-full rounded border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            >
+              <option value="ALL">Semua</option>
+              {semesters.map((semester) => <option key={semester} value={semester}>Semester {semester}</option>)}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Status</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="AKTIF">Aktif</option>
+              <option value="CUTI">Cuti</option>
+              <option value="NON_AKTIF">Non Aktif</option>
+              <option value="LULUS">Lulus</option>
+              <option value="TRANSFER">Transfer</option>
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+          <span>Menampilkan <span className="font-semibold text-slate-800">{filteredStudents.length}</span> dari {students.length} mahasiswa.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setStudyProgramFilter('ALL');
+              setSemesterFilter('ALL');
+              setStatusFilter('ALL');
+            }}
+            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Reset Filter
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded border border-slate-200">
+        <table className="min-w-[1660px] w-full text-left text-sm">
+          <thead className="bg-slate-100 text-xs uppercase tracking-[0.08em] text-slate-600">
+            <tr>
+              <th className="w-12 px-3 py-3">No</th>
+              <th className="px-3 py-3">Identitas Mahasiswa</th>
+              <th className="px-3 py-3">Akun Login</th>
+              <th className="px-3 py-3">Fakultas</th>
+              <th className="px-3 py-3">Program Studi</th>
+              <th className="px-3 py-3">Jenjang</th>
+              <th className="px-3 py-3">Semester</th>
+              <th className="px-3 py-3">Status Kuliah</th>
+              <th className="px-3 py-3">Status Mahasiswa</th>
+              <th className="px-3 py-3">Kelas</th>
+              <th className="px-3 py-3">Sistem Kuliah</th>
+              <th className="px-3 py-3">Orang Tua/Wali</th>
+              <th className="px-3 py-3">Role User</th>
+              <th className="sticky right-0 bg-slate-100 px-3 py-3">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredStudents.map((student, index) => {
+              const parents = student.parents || [];
+              const primaryParent = parents[0];
+              const roles = [student.user?.role, ...(student.user?.userRoles || []).map((item) => item.role)]
+                .filter(Boolean)
+                .map((role) => role?.name)
+                .filter((value, valueIndex, array) => value && array.indexOf(value) === valueIndex);
+              return (
+                <tr key={student.id} className="bg-white hover:bg-slate-50">
+                  <td className="px-3 py-3 text-slate-500">{index + 1}</td>
+                  <td className="px-3 py-3">
+                    <Link href={`/admin/mahasiswa/${student.id}`} className="font-semibold text-slate-950 hover:text-teal-700 hover:underline">{student.name}</Link>
+                    <p className="font-mono text-xs text-teal-700">{student.nim}</p>
+                  </td>
+                  <td className="px-3 py-3">
+                    <p className="text-slate-700">{student.user?.email || '-'}</p>
+                    <p className="text-xs text-slate-400">{student.user?.status || 'ACTIVE'}</p>
+                  </td>
+                  <td className="px-3 py-3">{student.studyProgram?.faculty?.name || '-'}</td>
+                  <td className="px-3 py-3">
+                    <p className="font-semibold text-slate-800">{student.studyProgram?.name || findName(data.studyPrograms, student.studyProgramId)}</p>
+                    <p className="text-xs text-slate-500">{student.studyProgram?.code || '-'}</p>
+                  </td>
+                  <td className="px-3 py-3">{student.studyProgram?.degreeLevelRef?.name || student.studyProgram?.degreeLevel || '-'}</td>
+                  <td className="px-3 py-3">
+                    <AccessBadge>Semester {student.currentSemester || 1}</AccessBadge>
+                  </td>
+                  <td className="px-3 py-3">
+                    <StudentStatusBadge value={student.status} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <p className="font-semibold text-slate-800">{student.studentStatus?.name || student.status || '-'}</p>
+                    <p className="text-xs text-slate-500">{student.studentStatus?.code || '-'}</p>
+                  </td>
+                  <td className="px-3 py-3">{student.studentClass?.name || findName(data.studentClasses, student.studentClassId || '')}</td>
+                  <td className="px-3 py-3">{student.studySystem?.name || findName(data.studySystems, student.studySystemId || '')}</td>
+                  <td className="px-3 py-3">
+                    <p className="font-semibold text-slate-800">{primaryParent?.name || '-'}</p>
+                    <p className="text-xs text-slate-500">{primaryParent ? `${primaryParent.relation}${primaryParent.phone ? ` - ${primaryParent.phone}` : ''}` : 'Belum ada data'}</p>
+                    {parents.length > 1 ? <p className="text-xs text-teal-700">+{parents.length - 1} kontak lain</p> : null}
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {roles.length ? roles.map((role) => <AccessBadge key={role}>{role}</AccessBadge>) : <span className="text-slate-400">-</span>}
+                    </div>
+                  </td>
+                  <td className="sticky right-0 bg-white px-3 py-3 shadow-[-8px_0_12px_rgba(15,23,42,0.06)]">
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={`/admin/mahasiswa/${student.id}`}
+                        className="rounded bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
+                      >
+                        Detail
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => onEditStudent?.(student)}
+                        className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteStudent?.(student)}
+                        className="rounded bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {!filteredStudents.length ? (
+              <tr>
+                <td colSpan={14} className="px-3 py-8 text-center text-slate-500">Tidak ada mahasiswa yang cocok dengan filter.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function normalizeStatus(value?: string | null) {
+  return (value || '-').toUpperCase().replaceAll(' ', '_');
+}
+
+function StudentStatusBadge({ value }: { value?: string | null }) {
+  const normalized = normalizeStatus(value);
+  const tone = normalized === 'AKTIF'
+    ? 'bg-emerald-50 text-emerald-800'
+    : normalized === 'CUTI'
+      ? 'bg-amber-50 text-amber-800'
+      : normalized === 'LULUS'
+        ? 'bg-sky-50 text-sky-800'
+        : 'bg-slate-100 text-slate-700';
+  return <span className={`inline-flex rounded px-2 py-1 text-xs font-semibold ${tone}`}>{value || '-'}</span>;
 }
 
 function FacultyDataView({ data, onOpenStudyProgramDetail }: { data: MasterDataBag; onOpenStudyProgramDetail?: (id: string) => void }) {
