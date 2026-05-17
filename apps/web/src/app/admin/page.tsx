@@ -224,6 +224,8 @@ export default function AdminPage() {
     setError('');
     setSuccess(`Menu ${path} sudah masuk struktur dan siap dibuat modulnya.`);
   };
+  const mahasiswaPortalLink = (tabName: string) => `/mahasiswa?tab=${tabName}`;
+  const pegawaiPortalLink = (tabName: string) => `/dosen?tab=${tabName}`;
   const menuGroups: DashboardMenuGroup[] = [
     {
       label: 'Beranda',
@@ -242,29 +244,29 @@ export default function AdminPage() {
           label: 'Mahasiswa',
           active: activeWorkspace === 'master-data' && tab === 'students',
           children: [
-            { label: 'Daftar Mahasiswa', active: activeWorkspace === 'master-data' && tab === 'students', onClick: () => openMasterTab('students') },
-            { label: 'Detail Mahasiswa', onClick: plannedMenu('Portal > Mahasiswa > Detail Mahasiswa') },
-            { label: 'Biodata', onClick: plannedMenu('Portal > Mahasiswa > Biodata') },
-            { label: 'Status Semester', onClick: plannedMenu('Portal > Mahasiswa > Status Semester') },
-            { label: 'KRS', onClick: plannedMenu('Portal > Mahasiswa > KRS') },
-            { label: 'KHS', onClick: plannedMenu('Portal > Mahasiswa > KHS') },
-            { label: 'Transkrip', onClick: plannedMenu('Portal > Mahasiswa > Transkrip') },
-            { label: 'Riwayat Keuangan', onClick: plannedMenu('Portal > Mahasiswa > Riwayat Keuangan') },
-            { label: 'Konsentrasi/Peminatan', onClick: plannedMenu('Portal > Mahasiswa > Konsentrasi/Peminatan') },
-            { label: 'Pindah/Transfer Prodi', onClick: plannedMenu('Portal > Mahasiswa > Pindah/Transfer Prodi') },
-            { label: 'Nilai Konversi', onClick: plannedMenu('Portal > Mahasiswa > Nilai Konversi') },
-            { label: 'Aktivitas & Prestasi', onClick: plannedMenu('Portal > Mahasiswa > Aktivitas & Prestasi') },
-            { label: 'Salin Mahasiswa', onClick: plannedMenu('Portal > Mahasiswa > Salin Mahasiswa') }
+            { label: 'Daftar Mahasiswa', href: mahasiswaPortalLink('daftar-mahasiswa') },
+            { label: 'Detail Mahasiswa', href: mahasiswaPortalLink('detail-mahasiswa') },
+            { label: 'Biodata', href: mahasiswaPortalLink('biodata') },
+            { label: 'Status Semester', href: mahasiswaPortalLink('status-semester') },
+            { label: 'KRS', href: mahasiswaPortalLink('krs') },
+            { label: 'KHS', href: mahasiswaPortalLink('khs') },
+            { label: 'Transkrip', href: mahasiswaPortalLink('transkrip') },
+            { label: 'Riwayat Keuangan', href: mahasiswaPortalLink('riwayat-keuangan') },
+            { label: 'Konsentrasi/Peminatan', href: mahasiswaPortalLink('konsentrasi-peminatan') },
+            { label: 'Pindah/Transfer Prodi', href: mahasiswaPortalLink('pindah-transfer-prodi') },
+            { label: 'Nilai Konversi', href: mahasiswaPortalLink('nilai-konversi') },
+            { label: 'Aktivitas & Prestasi', href: mahasiswaPortalLink('aktivitas-prestasi') },
+            { label: 'Salin Mahasiswa', href: mahasiswaPortalLink('salin-mahasiswa') }
           ]
         },
         {
           label: 'Pegawai',
           active: activeWorkspace === 'master-data' && tab === 'lecturers',
           children: [
-            { label: 'Daftar Pegawai/Dosen', active: activeWorkspace === 'master-data' && tab === 'lecturers', onClick: () => openMasterTab('lecturers') },
-            { label: 'Detail Pegawai', onClick: plannedMenu('Portal > Pegawai > Detail Pegawai') },
-            { label: 'Pembimbing', onClick: plannedMenu('Portal > Pegawai > Pembimbing') },
-            { label: 'Tanda Tangan/NIDN/NIDK/NUPN', onClick: plannedMenu('Portal > Pegawai > Tanda Tangan/NIDN/NIDK/NUPN') }
+            { label: 'Daftar Pegawai/Dosen', href: pegawaiPortalLink('daftar-pegawai-dosen') },
+            { label: 'Detail Pegawai', href: pegawaiPortalLink('detail-pegawai') },
+            { label: 'Pembimbing', href: pegawaiPortalLink('pembimbing') },
+            { label: 'Tanda Tangan/NIDN/NIDK/NUPN', href: pegawaiPortalLink('identitas-dosen') }
           ]
         },
         {

@@ -1,4 +1,8 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:3101/api/v1';
+export function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (typeof window !== 'undefined') return '/api/v1';
+  return 'http://127.0.0.1:3101/api/v1';
+}
 
 export type RoleOption = { code: string; name: string };
 export type StructuralPositionOption = {
@@ -20,7 +24,7 @@ export type LoginResponse = {
 };
 
 export async function login(email: string, password: string, roleCode?: string): Promise<LoginResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, roleCode })
@@ -52,7 +56,7 @@ export async function getSecureJson<T>(path: string, fallback: T): Promise<T> {
   try {
     const token = getToken();
     if (!token) return fallback;
-    const res = await fetch(`${API_BASE_URL}${path}`, {
+    const res = await fetch(`${getApiBaseUrl()}${path}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store'
     });
@@ -69,7 +73,7 @@ async function secureRequest<T>(method: HttpMethod, path: string, body?: unknown
   const token = getToken();
   if (!token) throw new Error('Sesi login tidak ditemukan');
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

@@ -1,4 +1,4 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Query, Req } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { DashboardService } from './dashboard.service';
@@ -40,5 +40,15 @@ export class DashboardController {
   @Get('secure/mahasiswa')
   secureMahasiswa(@Req() req: { user?: { userId?: string } }) {
     return this.service.mahasiswaSummaryByUser(req.user?.userId || '');
+  }
+
+  @Get('secure/mahasiswa/portal')
+  mahasiswaPortal(@Req() req: { user?: { userId?: string; role?: string } }, @Query('studentId') studentId?: string) {
+    return this.service.mahasiswaPortal(req.user?.userId || '', req.user?.role || '', studentId);
+  }
+
+  @Get('secure/dosen/portal')
+  dosenPortal(@Req() req: { user?: { userId?: string; role?: string } }, @Query('lecturerId') lecturerId?: string) {
+    return this.service.dosenPortal(req.user?.userId || '', req.user?.role || '', lecturerId);
   }
 }
