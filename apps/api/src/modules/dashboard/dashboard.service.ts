@@ -136,8 +136,9 @@ export class DashboardService {
           nim: true,
           name: true,
           currentSemester: true,
-          studyProgram: { select: { code: true, name: true } }
+          studyProgram: true
         },
+        include: { studyProgram: true },
         orderBy: { nim: 'asc' }
       })
       : [];
