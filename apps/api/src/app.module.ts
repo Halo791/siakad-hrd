@@ -18,6 +18,7 @@ import { AccessModule } from './modules/access/access.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionGuard } from './common/guards/permission.guard';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     SettingsModule,
     AccessModule
   ],
+  controllers: [AppController],
   providers: [
     PrismaService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
