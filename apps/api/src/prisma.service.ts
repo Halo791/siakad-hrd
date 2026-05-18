@@ -1,6 +1,7 @@
 import { INestApplication, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import mysql, { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
+import * as mysql from 'mysql2/promise';
+import { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
 
 type Queryable = Pool | PoolConnection;
 type Direction = 'asc' | 'desc';
