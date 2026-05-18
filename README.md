@@ -22,7 +22,7 @@ Lihat detail: `docs/architecture.md`
 ## Menjalankan Lokal
 1. Install dependency root dan workspace
 2. Salin env: `cp apps/api/.env.example apps/api/.env`
-3. Jalankan DB PostgreSQL lokal di port `5433` (atau sesuaikan `DATABASE_URL`)
+3. Jalankan DB MySQL lokal di port `3307` (atau sesuaikan `DATABASE_URL`)
 4. Generate Prisma client: `npm --workspace @siakad/api run prisma:generate`
 5. Migrate: `npm run db:migrate`
 6. Seed: `npm run db:seed`

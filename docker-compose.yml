@@ -1,14 +1,15 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.4
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: siakad
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: siakad
+      MYSQL_USER: siakad_user
+      MYSQL_PASSWORD: siakad_password
     ports:
-      - "5433:5432"
+      - "3307:3306"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
 
   api:
     build: ./apps/api
@@ -27,4 +28,4 @@ services:
       - api
 
 volumes:
-  pgdata:
+  mysqldata:
