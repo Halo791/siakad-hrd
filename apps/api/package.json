@@ -7,10 +7,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "lint": "echo \"add eslint\"",
-    "format": "echo \"add prettier\"",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "format": "echo \"add prettier\""
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -20,13 +17,13 @@
     "@nestjs/passport": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.0.0",
-    "@prisma/client": "^6.7.0",
     "csv-parse": "^5.5.6",
     "exceljs": "^4.4.0",
     "pdfkit": "^0.15.2",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "mysql2": "^3.11.5",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -42,7 +39,6 @@
     "@types/node": "^22.10.2",
     "@types/pdfkit": "^0.17.2",
     "@types/passport-jwt": "^4.0.1",
-    "prisma": "^6.7.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

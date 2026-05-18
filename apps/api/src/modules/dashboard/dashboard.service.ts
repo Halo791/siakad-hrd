@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { StudyPlanStatus } from '@prisma/client';
+import { StudyPlanStatus } from '../../prisma-compat';
 import { PrismaService } from '../../prisma.service';
 
 @Injectable()
@@ -225,7 +225,7 @@ export class DashboardService {
       gradesByPeriod.get(classStudent.class.periodId)!.push(classStudent);
     }
 
-    const khsByPeriod = new Map(student.khs.map((item) => [item.periodId, item]));
+    const khsByPeriod = new Map<string, any>(student.khs.map((item) => [item.periodId, item]));
     const khs = Array.from(gradesByPeriod.entries()).map(([periodId, classStudents]) => {
       const period = classStudents[0].class.period;
       const rows = classStudents.map((item) => {

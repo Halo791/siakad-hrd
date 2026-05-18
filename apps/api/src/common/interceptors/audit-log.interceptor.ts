@@ -4,7 +4,6 @@ import {
   Injectable,
   NestInterceptor
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { Observable, catchError, tap, throwError } from 'rxjs';
 import { PrismaService } from '../../prisma.service';
 
@@ -37,7 +36,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         action: input.action,
         entity: input.url,
         entityId: input.entityId,
-        metadata: input.metadata as Prisma.InputJsonValue
+        metadata: input.metadata
       }
     });
   }

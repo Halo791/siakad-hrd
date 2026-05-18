@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { StudyPlanStatus } from '@prisma/client';
+import { StudyPlanStatus } from '../../prisma-compat';
 import { IsArray, IsString } from 'class-validator';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { KrsService } from './krs.service';

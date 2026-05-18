@@ -1,0 +1,28 @@
+export enum StudyPlanStatus {
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELED = 'CANCELED'
+}
+
+export enum AttendanceStatus {
+  PRESENT = 'PRESENT',
+  PERMIT = 'PERMIT',
+  SICK = 'SICK',
+  ABSENT = 'ABSENT'
+}
+
+export enum LeaveStatus {
+  SUBMITTED = 'SUBMITTED',
+  PROCESS_PA = 'PROCESS_PA',
+  PROCESS_KAPRODI = 'PROCESS_KAPRODI',
+  PROCESS_DEKAN = 'PROCESS_DEKAN',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
+}
+
+export enum GenericStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE'
+}

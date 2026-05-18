@@ -12,12 +12,9 @@
     "dev:web": "npm --workspace @siakad/web run dev",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
-    "format": "npm run format --workspaces",
-    "db:migrate": "npm --workspace @siakad/api run prisma:migrate",
-    "db:seed": "npm --workspace @siakad/api run prisma:seed"
+    "format": "npm run format --workspaces"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
   }
 }
-
