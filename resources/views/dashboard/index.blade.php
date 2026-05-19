@@ -1,6 +1,11 @@
 @extends('layouts.app', ['title' => 'Dashboard'])
 
 @section('content')
+@if(request('menu'))
+<div class="alert ok">
+    Modul dipilih: <strong>{{ request('menu') }}</strong>. Halaman ini sudah masuk struktur menu Laravel dan siap dikembangkan ke fitur penuh.
+</div>
+@endif
 <div class="panel pad">
     <div class="grid grid-2">
         <div>
