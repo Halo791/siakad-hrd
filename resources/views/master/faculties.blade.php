@@ -1,22 +1,24 @@
 @extends('layouts.app', ['title' => 'Fakultas & Program Studi'])
 
 @section('content')
-<div class="grid" style="grid-template-columns:1fr 1fr">
-    <div class="card">
-        <h2>Fakultas</h2>
-        <table><thead><tr><th>Kode</th><th>Nama</th><th>Akreditasi</th></tr></thead><tbody>
+<div class="grid grid-2">
+    <div class="panel pad">
+        <p class="eyebrow">Struktur Akademik</p>
+        <h2 class="section-title">Fakultas</h2>
+        <div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama</th><th>Akreditasi</th></tr></thead><tbody>
         @foreach($faculties as $faculty)
-            <tr><td>{{ $faculty->code }}</td><td>{{ $faculty->name }}</td><td>{{ $faculty->accreditation ?? '-' }}</td></tr>
+            <tr><td><span class="badge gray">{{ $faculty->code }}</span></td><td><strong>{{ $faculty->name }}</strong></td><td>{{ $faculty->accreditation ?? '-' }}</td></tr>
         @endforeach
-        </tbody></table>
+        </tbody></table></div>
     </div>
-    <div class="card">
-        <h2>Program Studi</h2>
-        <table><thead><tr><th>Kode</th><th>Nama</th><th>Fakultas</th></tr></thead><tbody>
+    <div class="panel pad">
+        <p class="eyebrow">Struktur Akademik</p>
+        <h2 class="section-title">Program Studi</h2>
+        <div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama</th><th>Fakultas</th></tr></thead><tbody>
         @foreach($studyPrograms as $program)
-            <tr><td>{{ $program->code }}</td><td>{{ $program->name }}</td><td>{{ $program->faculty?->code }}</td></tr>
+            <tr><td><span class="badge">{{ $program->code }}</span></td><td><strong>{{ $program->name }}</strong></td><td>{{ $program->faculty?->code }}</td></tr>
         @endforeach
-        </tbody></table>
+        </tbody></table></div>
     </div>
 </div>
 @endsection
