@@ -4,8 +4,11 @@ namespace App\Models\Concerns;
 
 trait UsesSiakadTable
 {
-    public $incrementing = false;
-    protected $keyType = 'string';
-    public $timestamps = false;
-    protected $guarded = [];
+    public function initializeUsesSiakadTable(): void
+    {
+        $this->incrementing = false;
+        $this->keyType = 'string';
+        $this->timestamps = false;
+        $this->guarded = [];
+    }
 }
