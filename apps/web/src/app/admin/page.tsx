@@ -85,7 +85,7 @@ type MasterKey =
   | 'students'
   | 'student-parents';
 type MasterView = 'list' | 'input' | 'study-program-detail';
-type AdminWorkspace = 'master-data' | 'curriculum-module' | 'access-control';
+type AdminWorkspace = 'master-data' | 'curriculum-module' | 'access-control' | 'dynamic-page';
 type CurriculumTab = 'years' | 'courses' | 'copy-courses' | 'program-curriculum' | 'grading-scale';
 type AccessTab = 'role-permissions' | 'register-user' | 'user-roles' | 'audit-logs';
 type AccessActionKey =
@@ -144,6 +144,7 @@ export default function AdminPage() {
   const [activeWorkspace, setActiveWorkspace] = useState<AdminWorkspace>('master-data');
   const [curriculumTab, setCurriculumTab] = useState<CurriculumTab>('years');
   const [accessTab, setAccessTab] = useState<AccessTab>('role-permissions');
+  const [dynamicPagePath, setDynamicPagePath] = useState('');
   const [selectedStudyProgramId, setSelectedStudyProgramId] = useState('');
   const [loadingMaster, setLoadingMaster] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState('');
@@ -195,6 +196,7 @@ export default function AdminPage() {
   const openCurriculumTab = (targetTab: CurriculumTab) => {
     setActiveWorkspace('curriculum-module');
     setCurriculumTab(targetTab);
+    setDynamicPagePath('');
     setMasterView('list');
     setSelectedStudyProgramId('');
     setEditingStudentId('');
@@ -204,6 +206,7 @@ export default function AdminPage() {
   const openAccessTab = (targetTab: AccessTab) => {
     setActiveWorkspace('access-control');
     setAccessTab(targetTab);
+    setDynamicPagePath('');
     setMasterView('list');
     setSelectedStudyProgramId('');
     setEditingStudentId('');
@@ -214,6 +217,7 @@ export default function AdminPage() {
     setActiveWorkspace('master-data');
     setTab(targetTab);
     setMasterView(view);
+    setDynamicPagePath('');
     setSelectedStudyProgramId('');
     setEditingStudentId('');
     setForm({});
@@ -222,7 +226,12 @@ export default function AdminPage() {
   };
   const plannedMenu = (path: string) => () => {
     setError('');
-    setSuccess(`Menu ${path} sudah masuk struktur dan siap dibuat modulnya.`);
+    setSuccess('');
+    setActiveWorkspace('dynamic-page');
+    setDynamicPagePath(path);
+    setMasterView('list');
+    setSelectedStudyProgramId('');
+    setEditingStudentId('');
   };
   const mahasiswaPortalLink = (tabName: string) => `/mahasiswa?tab=${tabName}`;
   const pegawaiPortalLink = (tabName: string) => `/dosen?tab=${tabName}`;
@@ -885,6 +894,8 @@ export default function AdminPage() {
             <AccessControlPage activeTab={accessTab} onTabChange={setAccessTab} />
           ) : activeWorkspace === 'curriculum-module' ? (
             <CurriculumModulePage activeTab={curriculumTab} onTabChange={setCurriculumTab} />
+          ) : activeWorkspace === 'dynamic-page' ? (
+            <DynamicPagePanel path={dynamicPagePath} />
           ) : (
           <div className="mt-5 min-w-0 rounded border border-slate-200 bg-white">
             <div className="border-b border-slate-200 px-4 py-3">
@@ -966,6 +977,37 @@ export default function AdminPage() {
 
 function LoginPrompt() {
   return <p className="m-5 rounded border border-amber-200 bg-amber-50 p-3 text-sm">Silakan <Link href="/login" className="underline">login</Link> untuk melihat data dashboard.</p>;
+}
+
+function DynamicPagePanel({ path }: { path: string }) {
+  const segments = path.split(' > ').filter(Boolean);
+  const title = segments.at(-1) || 'Halaman Dinamis';
+  const section = segments.slice(0, -1).join(' / ') || 'Menu';
+
+  return (
+    <div className="mt-5 min-w-0 rounded border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">{section}</p>
+        <h3 className="mt-1 text-xl font-bold text-slate-900">{title}</h3>
+      </div>
+      <div className="min-h-[420px] p-4">
+        <div className="rounded border border-dashed border-teal-200 bg-teal-50/50 p-4">
+          <p className="text-sm font-semibold text-teal-900">Halaman ini sudah terindeks dari struktur menu dan submenu.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Path aktif: <span className="font-semibold text-slate-900">{path}</span>
+          </p>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {segments.map((segment, index) => (
+            <div key={`${segment}-${index}`} className="rounded border border-slate-200 bg-white p-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Level {index + 1}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{segment}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const ACCESS_TABS: Array<{ key: AccessTab; label: string; description: string }> = [
