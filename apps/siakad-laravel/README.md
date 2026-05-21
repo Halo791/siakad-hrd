@@ -10,7 +10,7 @@ Starter ini memakai database SIAKAD MySQL yang sudah ada. Modul awal yang sudah 
 - Dashboard ringkas.
 - Master mahasiswa, dosen, fakultas, dan prodi.
 - Register user sederhana.
-- Endpoint kompatibilitas awal `/api/v1`.
+- Endpoint kompatibilitas `/api/v1` untuk UI Next.js di repo ini.
 
 Laravel ini sengaja ditempatkan di `apps/siakad-laravel` agar API Node lama tetap bisa menjadi fallback selama migrasi.
 
@@ -70,6 +70,25 @@ GET  /api/v1
 POST /api/v1/auth/login
 GET  /api/v1/auth/profile
 GET  /api/v1/dashboard/admin
+GET  /api/v1/dashboard/dosen
+GET  /api/v1/dashboard/mahasiswa
+GET  /api/v1/dashboard/secure/admin
+GET  /api/v1/dashboard/secure/dosen
+GET  /api/v1/dashboard/secure/mahasiswa
+GET  /api/v1/dashboard/secure/mahasiswa/portal
+GET  /api/v1/dashboard/secure/dosen/portal
 GET  /api/v1/access/roles
+GET  /api/v1/access/permissions
 GET  /api/v1/access/users
+GET  /api/v1/master/universities
+GET  /api/v1/master/faculties
+GET  /api/v1/master/study-programs
+GET  /api/v1/master/students
+GET  /api/v1/master/lecturers
+```
+
+Frontend Next.js dapat diarahkan ke Laravel dengan:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1
 ```
