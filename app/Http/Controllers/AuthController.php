@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -75,6 +76,7 @@ class AuthController extends Controller
         $token = base64_encode($user->id.'|'.$selectedRole->code.'|'.Str::random(48));
         $user->refreshToken = $token;
         $user->save();
+        $structuralPositions = $this->structuralPositionsForUser($user);
 
         return response()->json([
             'accessToken' => $token,
@@ -84,7 +86,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => ['code' => $selectedRole->code, 'name' => $selectedRole->name],
-                'structuralPositions' => [],
+                'structuralPositions' => $structuralPositions,
             ],
             'availableRoles' => $roles->map(function ($role) {
                 return ['code' => $role->code, 'name' => $role->name];
@@ -111,5 +113,38 @@ class AuthController extends Controller
         if (!$token) return null;
 
         return User::with('role')->where('refreshToken', $token)->first();
+    }
+
+    private function structuralPositionsForUser(User $user)
+    {
+        if (!$user->lecturer || !$this->tableExists('LecturerStructuralPosition')) return [];
+
+        return DB::table('LecturerStructuralPosition')
+            ->join('StructuralPosition', 'LecturerStructuralPosition.positionId', '=', 'StructuralPosition.id')
+            ->leftJoin('Faculty', 'LecturerStructuralPosition.facultyId', '=', 'Faculty.id')
+            ->leftJoin('StudyProgram', 'LecturerStructuralPosition.studyProgramId', '=', 'StudyProgram.id')
+            ->where('LecturerStructuralPosition.lecturerId', $user->lecturer->id)
+            ->where('LecturerStructuralPosition.isActive', true)
+            ->select(
+                'LecturerStructuralPosition.id',
+                'StructuralPosition.code',
+                'StructuralPosition.name',
+                'StructuralPosition.level',
+                'Faculty.id as facultyId',
+                'Faculty.name as facultyName',
+                'StudyProgram.id as studyProgramId',
+                'StudyProgram.name as studyProgramName'
+            )
+            ->get();
+    }
+
+    private function tableExists(string $table): bool
+    {
+        try {
+            DB::table($table)->limit(1)->get();
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }
