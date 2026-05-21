@@ -1,5 +1,15 @@
 /vendor
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.next/
+**/.next/
 /.env
+.env
+.env.*
+**/.env
+**/.env.*
 /storage/*.key
 /storage/framework/cache/*
 /storage/framework/sessions/*
