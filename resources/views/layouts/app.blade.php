@@ -1,6 +1,7 @@
 @php
     $planned = fn (string $path) => route('dashboard', ['menu' => $path]);
     $studentPortal = fn (string $tab) => route('portal.mahasiswa', ['tab' => $tab] + (request('studentId') ? ['studentId' => request('studentId')] : []));
+    $portal = fn (string $section, string $tab) => route('portal.index', ['section' => $section, 'tab' => $tab]);
     $menuGroups = [
         [
             'label' => 'Beranda', 'description' => 'Ringkasan sistem', 'items' => [
@@ -26,21 +27,21 @@
                     ['label' => 'Aktivitas & Prestasi', 'href' => $studentPortal('aktivitas-prestasi'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'aktivitas-prestasi'],
                     ['label' => 'Salin Mahasiswa', 'href' => $studentPortal('salin-mahasiswa'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'salin-mahasiswa'],
                 ]],
-                ['label' => 'Pegawai', 'active' => request()->routeIs('master.lecturers'), 'children' => [
-                    ['label' => 'Daftar Pegawai/Dosen', 'href' => route('master.lecturers'), 'active' => request()->routeIs('master.lecturers')],
-                    ['label' => 'Detail Pegawai', 'href' => $planned('Portal > Pegawai > Detail Pegawai')],
-                    ['label' => 'Pembimbing', 'href' => $planned('Portal > Pegawai > Pembimbing')],
-                    ['label' => 'Tanda Tangan/NIDN/NIDK/NUPN', 'href' => $planned('Portal > Pegawai > Tanda Tangan/NIDN/NIDK/NUPN')],
+                ['label' => 'Pegawai', 'active' => request()->routeIs('portal.index') && request()->route('section') === 'pegawai', 'children' => [
+                    ['label' => 'Daftar Pegawai/Dosen', 'href' => $portal('pegawai', 'daftar-pegawai'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'pegawai' && request('tab', 'daftar-pegawai') === 'daftar-pegawai'],
+                    ['label' => 'Detail Pegawai', 'href' => $portal('pegawai', 'detail-pegawai'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'pegawai' && request('tab') === 'detail-pegawai'],
+                    ['label' => 'Pembimbing', 'href' => $portal('pegawai', 'pembimbing'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'pegawai' && request('tab') === 'pembimbing'],
+                    ['label' => 'Tanda Tangan/NIDN/NIDK/NUPN', 'href' => $portal('pegawai', 'tanda-tangan'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'pegawai' && request('tab') === 'tanda-tangan'],
                 ]],
-                ['label' => 'Kegiatan', 'children' => [
-                    ['label' => 'Kalender Akademik', 'href' => $planned('Portal > Kegiatan > Kalender Akademik')],
-                    ['label' => 'Monitoring Kalender Akademik', 'href' => $planned('Portal > Kegiatan > Monitoring Kalender Akademik')],
+                ['label' => 'Kegiatan', 'active' => request()->routeIs('portal.index') && request()->route('section') === 'kegiatan', 'children' => [
+                    ['label' => 'Kalender Akademik', 'href' => $portal('kegiatan', 'kalender-akademik'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'kegiatan' && request('tab', 'kalender-akademik') === 'kalender-akademik'],
+                    ['label' => 'Monitoring Kalender Akademik', 'href' => $portal('kegiatan', 'monitoring-kalender-akademik'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'kegiatan' && request('tab') === 'monitoring-kalender-akademik'],
                 ]],
-                ['label' => 'Orang Tua', 'children' => [
-                    ['label' => 'Monitoring Mahasiswa', 'href' => $planned('Portal > Orang Tua > Monitoring Mahasiswa')],
+                ['label' => 'Orang Tua', 'active' => request()->routeIs('portal.index') && request()->route('section') === 'orang-tua', 'children' => [
+                    ['label' => 'Monitoring Mahasiswa', 'href' => $portal('orang-tua', 'monitoring-mahasiswa'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'orang-tua'],
                 ]],
-                ['label' => 'Alumni', 'children' => [
-                    ['label' => 'Profil Alumni', 'href' => $planned('Portal > Alumni > Profil Alumni')],
+                ['label' => 'Alumni', 'active' => request()->routeIs('portal.index') && request()->route('section') === 'alumni', 'children' => [
+                    ['label' => 'Profil Alumni', 'href' => $portal('alumni', 'profil-alumni'), 'active' => request()->routeIs('portal.index') && request()->route('section') === 'alumni'],
                 ]],
             ],
         ],
