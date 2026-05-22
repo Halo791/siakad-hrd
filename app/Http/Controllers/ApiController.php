@@ -13,6 +13,7 @@ use App\Models\StudyProgram;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -226,27 +227,31 @@ class ApiController extends Controller
 
     public function studyPrograms()
     {
-        return response()->json(StudyProgram::with(['faculty'])->orderBy('code')->get());
+        return response()->json(StudyProgram::with(['faculty'])->orderBy('code')->get()->map(fn ($program) => $this->studyProgramRow($program))->values());
     }
 
     public function students()
     {
-        return response()->json(Student::with([
+        $students = Student::with([
             'user.role',
             'user.userRoles.role',
             'studyProgram.faculty',
             'parents',
-        ])->orderBy('nim')->get());
+        ])->orderBy('nim')->get();
+
+        return response()->json($students->map(fn ($student) => $this->studentRow($student))->values());
     }
 
     public function student(string $id)
     {
-        return response()->json(Student::with([
+        $student = Student::with([
             'user.role',
             'user.userRoles.role',
             'studyProgram.faculty',
             'parents',
-        ])->findOrFail($id));
+        ])->findOrFail($id);
+
+        return response()->json($this->studentRow($student));
     }
 
     public function lecturers()
@@ -377,6 +382,306 @@ class ApiController extends Controller
         ]);
     }
 
+    public function curriculums()
+    {
+        return response()->json($this->tableExists('Curriculum')
+            ? DB::table('Curriculum')
+                ->leftJoin('StudyProgram', 'Curriculum.studyProgramId', '=', 'StudyProgram.id')
+                ->select('Curriculum.*', 'StudyProgram.code as studyProgramCode', 'StudyProgram.name as studyProgramName')
+                ->orderByDesc('Curriculum.year')
+                ->get()
+            : []);
+    }
+
+    public function storeCurriculum(Request $request)
+    {
+        $data = $request->validate([
+            'studyProgramId' => ['required', 'string'],
+            'year' => ['required', 'integer'],
+            'name' => ['required', 'string'],
+        ]);
+
+        return response()->json($this->insertAndReturn('Curriculum', $data));
+    }
+
+    public function courses()
+    {
+        return response()->json($this->tableExists('Course') ? DB::table('Course')->orderBy('code')->get() : []);
+    }
+
+    public function storeCourse(Request $request)
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string'],
+            'name' => ['required', 'string'],
+            'sks' => ['required', 'integer'],
+            'minPassingGrade' => ['required', 'string'],
+            'isMandatory' => ['required', 'boolean'],
+        ]);
+
+        return response()->json($this->insertAndReturn('Course', $data));
+    }
+
+    public function classes()
+    {
+        if (!$this->tableExists('Class')) return response()->json([]);
+
+        return response()->json(DB::table('Class')
+            ->leftJoin('StudyProgram', 'Class.studyProgramId', '=', 'StudyProgram.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
+            ->leftJoin('AcademicPeriod', 'Class.periodId', '=', 'AcademicPeriod.id')
+            ->select(
+                'Class.*',
+                'StudyProgram.code as studyProgramCode',
+                'StudyProgram.name as studyProgramName',
+                'Course.code as courseCode',
+                'Course.name as courseName',
+                'Course.sks',
+                'AcademicPeriod.code as periodCode',
+                'AcademicPeriod.name as periodName'
+            )
+            ->orderByDesc('AcademicPeriod.code')
+            ->orderBy('Course.code')
+            ->get());
+    }
+
+    public function storeClass(Request $request)
+    {
+        $data = $request->validate([
+            'studyProgramId' => ['required', 'string'],
+            'courseId' => ['required', 'string'],
+            'periodId' => ['required', 'string'],
+            'name' => ['required', 'string'],
+            'capacity' => ['required', 'integer'],
+        ]);
+
+        return response()->json($this->insertAndReturn('Class', $data));
+    }
+
+    public function studyPlans(Request $request)
+    {
+        if (!$this->tableExists('StudyPlan')) return response()->json([]);
+
+        $query = DB::table('StudyPlan')
+            ->leftJoin('Student', 'StudyPlan.studentId', '=', 'Student.id')
+            ->leftJoin('AcademicPeriod', 'StudyPlan.periodId', '=', 'AcademicPeriod.id')
+            ->select('StudyPlan.*', 'Student.nim', 'Student.name as studentName', 'AcademicPeriod.code as periodCode', 'AcademicPeriod.name as periodName');
+
+        if ($request->query('periodId')) $query->where('StudyPlan.periodId', $request->query('periodId'));
+        if ($request->query('status')) $query->where('StudyPlan.status', $request->query('status'));
+
+        return response()->json($query->orderByDesc('AcademicPeriod.code')->orderBy('Student.nim')->get());
+    }
+
+    public function storeStudyPlan(Request $request)
+    {
+        $data = $request->validate(['studentId' => ['required', 'string'], 'periodId' => ['required', 'string']]);
+        $data['status'] = 'DRAFT';
+
+        return response()->json($this->insertAndReturn('StudyPlan', $data));
+    }
+
+    public function storeStudyPlanItem(Request $request, string $id)
+    {
+        $data = $request->validate(['classId' => ['required', 'string']]);
+        $data['studyPlanId'] = $id;
+
+        return response()->json($this->insertAndReturn('StudyPlanItem', $data));
+    }
+
+    public function submitStudyPlan(string $id) { return $this->setStudyPlanStatus($id, 'SUBMITTED'); }
+    public function approveStudyPlan(string $id) { return $this->setStudyPlanStatus($id, 'APPROVED'); }
+    public function rejectStudyPlan(string $id) { return $this->setStudyPlanStatus($id, 'REJECTED'); }
+
+    public function approveStudyPlansBulk(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if ($this->tableExists('StudyPlan') && is_array($ids) && $ids) {
+            DB::table('StudyPlan')->whereIn('id', $ids)->update(['status' => 'APPROVED']);
+        }
+
+        return response()->json(['updated' => is_array($ids) ? count($ids) : 0]);
+    }
+
+    public function validateStudyPlan(string $id)
+    {
+        return response()->json(['studyPlanId' => $id, 'valid' => true, 'messages' => []]);
+    }
+
+    public function grades()
+    {
+        if (!$this->tableExists('Grade')) return response()->json([]);
+
+        return response()->json(DB::table('Grade')
+            ->leftJoin('ClassStudent', 'Grade.classStudentId', '=', 'ClassStudent.id')
+            ->leftJoin('Student', 'ClassStudent.studentId', '=', 'Student.id')
+            ->leftJoin('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
+            ->select('Grade.*', 'Student.nim', 'Student.name as studentName', 'Course.code as courseCode', 'Course.name as courseName', 'Class.name as className')
+            ->orderBy('Student.nim')
+            ->get());
+    }
+
+    public function lockGrade(string $id) { return $this->setGradeLocked($id, true); }
+    public function unlockGrade(string $id) { return $this->setGradeLocked($id, false); }
+
+    public function importGradesCsv(Request $request)
+    {
+        $classId = $request->input('classId');
+        $file = $request->file('file');
+        if (!$classId || !$file) return response()->json(['message' => 'classId and file are required'], 422);
+
+        $rows = array_map('str_getcsv', file($file->getRealPath()));
+        $header = array_map(fn ($item) => Str::lower(trim($item)), array_shift($rows) ?: []);
+        $imported = 0;
+
+        foreach ($rows as $row) {
+            $record = array_combine($header, $row);
+            if (!$record || empty($record['nim'])) continue;
+            $classStudentId = DB::table('ClassStudent')
+                ->join('Student', 'ClassStudent.studentId', '=', 'Student.id')
+                ->where('ClassStudent.classId', $classId)
+                ->where('Student.nim', $record['nim'])
+                ->value('ClassStudent.id');
+            if (!$classStudentId) continue;
+
+            $score = (float) ($record['score'] ?? 0);
+            DB::table('Grade')->updateOrInsert(
+                ['classStudentId' => $classStudentId],
+                ['id' => $this->newId(), 'score' => $score, 'letter' => $record['letter'] ?? $this->letterFromScore($score), 'isLocked' => false]
+            );
+            $imported++;
+        }
+
+        return response()->json(['imported' => $imported]);
+    }
+
+    public function khs()
+    {
+        return response()->json($this->tableExists('Khs') ? DB::table('Khs')->orderByDesc('periodId')->get() : []);
+    }
+
+    public function generateKhs(string $periodId)
+    {
+        if (!$this->tableExists('Khs')) return response()->json(['generated' => 0]);
+        $students = Student::orderBy('nim')->get();
+        $generated = 0;
+
+        foreach ($students as $student) {
+            $summary = $this->gradeSummary($student->id, $periodId);
+            DB::table('Khs')->updateOrInsert(
+                ['studentId' => $student->id, 'periodId' => $periodId],
+                ['id' => $this->newId(), 'ips' => $summary['gpa'], 'ipk' => $summary['gpa'], 'totalSks' => $summary['sks']]
+            );
+            $generated++;
+        }
+
+        return response()->json(['generated' => $generated]);
+    }
+
+    public function transcripts()
+    {
+        return response()->json($this->tableExists('Transcript') ? DB::table('Transcript')->orderBy('studentId')->get() : []);
+    }
+
+    public function generateTranscript(string $studentId)
+    {
+        $summary = $this->gradeSummary($studentId);
+        $row = $this->tableExists('Transcript') ? DB::table('Transcript')->updateOrInsert(
+            ['studentId' => $studentId],
+            ['id' => $this->newId(), 'gpa' => $summary['gpa'], 'totalSks' => $summary['sks']]
+        ) : false;
+
+        return response()->json(['studentId' => $studentId, 'gpa' => $summary['gpa'], 'totalSks' => $summary['sks'], 'saved' => (bool) $row]);
+    }
+
+    public function studentDocuments(string $studentId)
+    {
+        return response()->json($this->rowsWhere('StudentDocument', 'studentId', $studentId));
+    }
+
+    public function uploadStudentDocument(Request $request)
+    {
+        $data = $request->validate(['studentId' => ['required', 'string'], 'category' => ['required', 'string']]);
+        $file = $request->file('file');
+        if (!$file) return response()->json(['message' => 'file is required'], 422);
+
+        $path = $file->store('student-documents');
+        $row = $this->insertAndReturn('StudentDocument', [
+            'studentId' => $data['studentId'],
+            'category' => $data['category'],
+            'fileName' => $file->getClientOriginalName(),
+            'filePath' => storage_path('app/'.$path),
+            'uploadedAt' => now(),
+        ]);
+
+        return response()->json($row);
+    }
+
+    public function downloadStudentDocument(string $id)
+    {
+        if (!$this->tableExists('StudentDocument')) abort(404);
+        $doc = DB::table('StudentDocument')->where('id', $id)->first();
+        abort_unless($doc && is_file($doc->filePath), 404);
+
+        return response()->download($doc->filePath, $doc->fileName);
+    }
+
+    public function deleteStudentDocument(string $id)
+    {
+        if ($this->tableExists('StudentDocument')) DB::table('StudentDocument')->where('id', $id)->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function studyProgramSettings(Request $request)
+    {
+        if (!$this->tableExists('StudyProgramSetting')) return response()->json([]);
+        $query = DB::table('StudyProgramSetting');
+        if ($request->query('periodId')) $query->where('periodId', $request->query('periodId'));
+
+        return response()->json($query->get());
+    }
+
+    public function upsertStudyProgramSetting(Request $request)
+    {
+        $data = $request->only([
+            'studyProgramId', 'periodId', 'openKrs', 'krsStartDate', 'krsEndDate', 'openKrsValidation',
+            'openPrintKrs', 'openPrintUts', 'openPrintUas', 'minAttendanceUts', 'minAttendanceUas',
+            'totalMeetings', 'allowLecturerGenerate', 'allowLecturerEditGrade',
+        ]);
+        $data = collect($data)->filter(fn ($value) => $value !== null && $value !== '')->all();
+        abort_unless(isset($data['studyProgramId'], $data['periodId']), 422);
+
+        DB::table('StudyProgramSetting')->updateOrInsert(
+            ['studyProgramId' => $data['studyProgramId'], 'periodId' => $data['periodId']],
+            ['id' => $this->newId()] + $data
+        );
+
+        return response()->json(DB::table('StudyProgramSetting')->where('studyProgramId', $data['studyProgramId'])->where('periodId', $data['periodId'])->first());
+    }
+
+    public function exportKrsCsv(string $studyPlanId)
+    {
+        $rows = $this->krsExportRows($studyPlanId);
+        return Response::make($this->csvFromRows($rows), 200, ['Content-Type' => 'text/csv']);
+    }
+
+    public function exportTranscriptCsv(string $studentId)
+    {
+        $rows = $this->transcriptExportRows($studentId);
+        return Response::make($this->csvFromRows($rows), 200, ['Content-Type' => 'text/csv']);
+    }
+
+    public function exportKhsText(string $studentId, string $periodId)
+    {
+        $student = Student::find($studentId);
+        $khs = $this->tableExists('Khs') ? DB::table('Khs')->where('studentId', $studentId)->where('periodId', $periodId)->first() : null;
+        $text = "KHS\nMahasiswa: ".($student?->name ?? $studentId)."\nIPS: ".($khs->ips ?? '0')."\nIPK: ".($khs->ipk ?? '0')."\n";
+
+        return Response::make($text, 200, ['Content-Type' => 'text/plain']);
+    }
+
     private function userFromBearer(Request $request): array
     {
         $token = Str::after($request->header('Authorization', ''), 'Bearer ');
@@ -389,6 +694,16 @@ class ApiController extends Controller
         }
 
         return ['user' => $user, 'role' => $role];
+    }
+
+    private function insertAndReturn(string $table, array $data)
+    {
+        abort_unless($this->tableExists($table), 404);
+        $data = collect($data)->filter(fn ($value) => $value !== null && $value !== '')->all();
+        $data['id'] = $data['id'] ?? $this->newId();
+        DB::table($table)->insert($data);
+
+        return DB::table($table)->where('id', $data['id'])->first();
     }
 
     private function countTable(string $table): int
@@ -428,6 +743,13 @@ class ApiController extends Controller
         return DB::table($table)->where('id', $id)->value('name') ?: '-';
     }
 
+    private function refObject(string $table, ?string $id)
+    {
+        if (!$id || !$this->tableExists($table)) return null;
+
+        return DB::table($table)->where('id', $id)->first();
+    }
+
     private function newId(): string
     {
         return 'cl'.Str::lower(Str::random(23));
@@ -459,6 +781,27 @@ class ApiController extends Controller
             'facultyCode' => $program?->faculty?->code ?? '-',
             'facultyName' => $program?->faculty?->name ?? '-',
         ];
+    }
+
+    private function studyProgramRow(StudyProgram $program): array
+    {
+        $payload = $program->toArray();
+        $payload['degreeLevelRef'] = $this->refObject('DegreeLevelRef', $program->degreeLevelId);
+
+        return $payload;
+    }
+
+    private function studentRow(Student $student): array
+    {
+        $payload = $student->toArray();
+        $payload['studentClass'] = $this->refObject('StudentClassRef', $student->studentClassId);
+        $payload['studentStatus'] = $this->refObject('StudentStatusRef', $student->studentStatusId);
+        $payload['studySystem'] = $this->refObject('StudySystemRef', $student->studySystemId);
+        if ($student->studyProgram) {
+            $payload['studyProgram'] = $this->studyProgramRow($student->studyProgram);
+        }
+
+        return $payload;
     }
 
     private function resolveStudent(?User $user, bool $canInspect, ?string $studentId): ?Student
@@ -675,6 +1018,105 @@ class ApiController extends Controller
             'REJECTED' => 'Ditolak',
             'CANCELED' => 'Dibatalkan',
         ][$status] ?? 'Draft';
+    }
+
+    private function setStudyPlanStatus(string $id, string $status)
+    {
+        abort_unless($this->tableExists('StudyPlan'), 404);
+        DB::table('StudyPlan')->where('id', $id)->update(['status' => $status]);
+
+        return response()->json(DB::table('StudyPlan')->where('id', $id)->first());
+    }
+
+    private function setGradeLocked(string $id, bool $locked)
+    {
+        abort_unless($this->tableExists('Grade'), 404);
+        DB::table('Grade')->where('id', $id)->update(['isLocked' => $locked]);
+
+        return response()->json(DB::table('Grade')->where('id', $id)->first());
+    }
+
+    private function letterFromScore(float $score): string
+    {
+        return match (true) {
+            $score >= 85 => 'A',
+            $score >= 75 => 'B',
+            $score >= 65 => 'C',
+            $score >= 50 => 'D',
+            default => 'E',
+        };
+    }
+
+    private function gradePoint(string $letter, float $score): float
+    {
+        return match ($letter) {
+            'A' => 4.0,
+            'B' => 3.0,
+            'C' => 2.0,
+            'D' => 1.0,
+            default => min(4, max(0, $score / 25)),
+        };
+    }
+
+    private function gradeSummary(string $studentId, ?string $periodId = null): array
+    {
+        if (!$this->tableExists('Grade')) return ['sks' => 0, 'gpa' => 0];
+
+        $query = DB::table('Grade')
+            ->join('ClassStudent', 'Grade.classStudentId', '=', 'ClassStudent.id')
+            ->join('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->join('Course', 'Class.courseId', '=', 'Course.id')
+            ->where('ClassStudent.studentId', $studentId)
+            ->where('Grade.isLocked', true)
+            ->select('Grade.score', 'Grade.letter', 'Course.sks');
+
+        if ($periodId) $query->where('Class.periodId', $periodId);
+
+        $rows = $query->get();
+        $sks = (int) $rows->sum('sks');
+        $quality = $rows->sum(fn ($row) => $this->gradePoint($row->letter, (float) $row->score) * (int) $row->sks);
+
+        return ['sks' => $sks, 'gpa' => $sks ? round($quality / $sks, 2) : 0];
+    }
+
+    private function krsExportRows(string $studyPlanId)
+    {
+        if (!$this->tableExists('StudyPlanItem')) return [];
+
+        return DB::table('StudyPlanItem')
+            ->join('Class', 'StudyPlanItem.classId', '=', 'Class.id')
+            ->join('Course', 'Class.courseId', '=', 'Course.id')
+            ->where('StudyPlanItem.studyPlanId', $studyPlanId)
+            ->select('Course.code as kode_mk', 'Course.name as mata_kuliah', 'Course.sks', 'Class.name as kelas')
+            ->get()
+            ->map(fn ($row) => (array) $row)
+            ->all();
+    }
+
+    private function transcriptExportRows(string $studentId)
+    {
+        if (!$this->tableExists('Grade')) return [];
+
+        return DB::table('Grade')
+            ->join('ClassStudent', 'Grade.classStudentId', '=', 'ClassStudent.id')
+            ->join('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->join('Course', 'Class.courseId', '=', 'Course.id')
+            ->where('ClassStudent.studentId', $studentId)
+            ->select('Course.code as kode_mk', 'Course.name as mata_kuliah', 'Course.sks', 'Grade.score as nilai', 'Grade.letter as huruf')
+            ->get()
+            ->map(fn ($row) => (array) $row)
+            ->all();
+    }
+
+    private function csvFromRows(array $rows): string
+    {
+        if (!$rows) return '';
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, array_keys($rows[0]));
+        foreach ($rows as $row) fputcsv($handle, $row);
+        rewind($handle);
+
+        return stream_get_contents($handle) ?: '';
     }
 
     private function emptyMahasiswaPortal(string $role, bool $canInspect): array

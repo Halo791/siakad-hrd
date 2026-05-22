@@ -47,3 +47,44 @@ Route::get('/master/student-parents', [ApiController::class, 'studentParents']);
 Route::post('/master/{resource}', [ApiController::class, 'storeMaster']);
 Route::patch('/master/{resource}/{id}', [ApiController::class, 'updateMaster']);
 Route::delete('/master/{resource}/{id}', [ApiController::class, 'deleteMaster']);
+
+Route::get('/curriculum', [ApiController::class, 'curriculums']);
+Route::post('/curriculum', [ApiController::class, 'storeCurriculum']);
+Route::get('/curriculum/courses', [ApiController::class, 'courses']);
+Route::post('/curriculum/courses', [ApiController::class, 'storeCourse']);
+
+Route::get('/classes', [ApiController::class, 'classes']);
+Route::post('/classes', [ApiController::class, 'storeClass']);
+
+Route::get('/krs', [ApiController::class, 'studyPlans']);
+Route::post('/krs', [ApiController::class, 'storeStudyPlan']);
+Route::post('/krs/{id}/items', [ApiController::class, 'storeStudyPlanItem']);
+Route::post('/krs/{id}/submit', [ApiController::class, 'submitStudyPlan']);
+Route::post('/krs/{id}/approve', [ApiController::class, 'approveStudyPlan']);
+Route::post('/krs/approve-bulk', [ApiController::class, 'approveStudyPlansBulk']);
+Route::post('/krs/{id}/reject', [ApiController::class, 'rejectStudyPlan']);
+Route::post('/krs/{id}/validate', [ApiController::class, 'validateStudyPlan']);
+
+Route::get('/grades', [ApiController::class, 'grades']);
+Route::post('/grades/{id}/lock', [ApiController::class, 'lockGrade']);
+Route::post('/grades/{id}/unlock', [ApiController::class, 'unlockGrade']);
+Route::post('/grades/import-csv', [ApiController::class, 'importGradesCsv']);
+
+Route::get('/khs', [ApiController::class, 'khs']);
+Route::post('/khs/generate/{periodId}', [ApiController::class, 'generateKhs']);
+Route::get('/transcripts', [ApiController::class, 'transcripts']);
+Route::post('/transcripts/generate/{studentId}', [ApiController::class, 'generateTranscript']);
+
+Route::get('/documents/student/{studentId}', [ApiController::class, 'studentDocuments']);
+Route::post('/documents/upload', [ApiController::class, 'uploadStudentDocument']);
+Route::get('/documents/{id}/download', [ApiController::class, 'downloadStudentDocument']);
+Route::delete('/documents/{id}', [ApiController::class, 'deleteStudentDocument']);
+
+Route::get('/settings/study-program', [ApiController::class, 'studyProgramSettings']);
+Route::post('/settings/study-program', [ApiController::class, 'upsertStudyProgramSetting']);
+
+Route::get('/reports/krs/{studyPlanId}.csv', [ApiController::class, 'exportKrsCsv']);
+Route::get('/reports/krs/{studyPlanId}.xlsx', [ApiController::class, 'exportKrsCsv']);
+Route::get('/reports/transcript/{studentId}.csv', [ApiController::class, 'exportTranscriptCsv']);
+Route::get('/reports/transcript/{studentId}.xlsx', [ApiController::class, 'exportTranscriptCsv']);
+Route::get('/reports/khs/{studentId}/{periodId}.pdf', [ApiController::class, 'exportKhsText']);
