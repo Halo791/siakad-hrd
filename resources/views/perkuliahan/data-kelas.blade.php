@@ -35,32 +35,6 @@
     @media(max-width:950px){.class-layout,.stats,.form-grid,.mini-form{grid-template-columns:1fr}.class-side{border-right:0;border-bottom:1px solid #e5e7eb}.form-grid .wide{grid-column:auto}}
 </style>
 
-@php
-    $attachmentBlock = function (string $resource, string $table, string $id) use ($attachmentsFor, $previewUrl, $tab) {
-        $items = $attachmentsFor($table, $id);
-@endphp
-        <div class="preview-grid">
-            @foreach($items as $attachment)
-                <span>
-                    <img class="preview-img" src="{{ $previewUrl($attachment->imageUrl) }}" alt="{{ $attachment->title }}">
-                    <form method="post" action="{{ route('classes.attachments.destroy', $attachment->id) }}">
-                        @csrf
-                        @method('DELETE')
-                        <button class="badge gray" type="submit" style="border:0;margin-top:4px">Hapus</button>
-                    </form>
-                </span>
-            @endforeach
-        </div>
-        <form class="mini-form" method="post" action="{{ route('classes.attachments.store', ['resource' => $resource, 'id' => $id, 'tab' => $tab]) }}">
-            @csrf
-            <label>Judul gambar<input name="title" placeholder="Preview / bukti"></label>
-            <label>Link Google Drive / gambar<input name="imageUrl" placeholder="https://drive.google.com/file/d/.../view"></label>
-            <button class="btn" type="submit">Upload Link</button>
-        </form>
-@php
-    };
-@endphp
-
 <div class="panel">
     <div class="class-layout">
         <aside class="class-side">
@@ -105,7 +79,7 @@
                             <td><select name="academicYearId">@foreach($academicYears as $year)<option value="{{ $year->id }}" @selected($row->academicYearId === $year->id)>{{ $year->code }}</option>@endforeach</select></td>
                             <td><input type="date" name="startDate" value="{{ substr($row->startDate, 0, 10) }}"></td><td><input type="date" name="endDate" value="{{ substr($row->endDate, 0, 10) }}"></td>
                             <td><label style="margin:0"><input type="checkbox" name="isActive" value="1" style="width:auto" @checked($row->isActive)> Aktif</label></td>
-                            <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'periods', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('periods', 'AcademicPeriod', $row->id) !!}</td>
+                            <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'periods', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'periods', 'table' => 'AcademicPeriod', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                         </tr>
                     @empty<tr><td colspan="7">Belum ada periode.</td></tr>@endforelse
                     </tbody></table></div>
@@ -126,7 +100,7 @@
                             <td><select name="courseId">@foreach($courses as $course)<option value="{{ $course->id }}" @selected($row->courseId === $course->id)>{{ $course->code }}</option>@endforeach</select></td>
                             <td><select name="periodId">@foreach($periods as $period)<option value="{{ $period->id }}" @selected($row->periodId === $period->id)>{{ $period->name }}</option>@endforeach</select></td>
                             <td><input type="number" name="capacity" value="{{ $row->capacity }}"></td>
-                            <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'classes', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('classes', 'Class', $row->id) !!}</td>
+                            <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'classes', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'classes', 'table' => 'Class', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                         </tr>
                     @empty<tr><td colspan="6">Belum ada kelas.</td></tr>@endforelse
                     </tbody></table></div>
@@ -141,7 +115,7 @@
                         <td><select name="classId">@foreach($classes as $class)<option value="{{ $class->id }}" @selected($row->classId === $class->id)>{{ $classLabel($class) }}</option>@endforeach</select></td>
                         <td><select name="lecturerId">@foreach($plainLecturers as $lecturer)<option value="{{ $lecturer->id }}" @selected($row->lecturerId === $lecturer->id)>{{ $lecturer->name }}</option>@endforeach</select></td>
                         <td><input type="checkbox" name="isPrimary" value="1" style="width:auto" @checked($row->isPrimary)></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'lecturers', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('lecturers', 'ClassLecturer', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'lecturers', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'lecturers', 'table' => 'ClassLecturer', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                     </tr>@empty<tr><td colspan="4">Belum ada dosen pengajar.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'jadwal-perkuliahan')
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'schedules', 'tab' => $tab]) }}">@csrf
@@ -150,7 +124,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Hari</th><th>Waktu</th><th>Ruang</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($schedules as $row)<tr><form method="post" action="{{ route('classes.update', ['resource' => 'schedules', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('PATCH')
                         <td><select name="classId">@foreach($classes as $class)<option value="{{ $class->id }}" @selected($row->classId === $class->id)>{{ $classLabel($class) }}</option>@endforeach</select></td><td><input type="number" name="dayOfWeek" min="1" max="7" value="{{ $row->dayOfWeek }}"></td><td><input name="startTime" value="{{ $row->startTime }}"><input name="endTime" value="{{ $row->endTime }}"></td><td><input name="room" value="{{ $row->room }}"></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'schedules', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('schedules', 'ClassSchedule', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'schedules', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'schedules', 'table' => 'ClassSchedule', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                     </tr>@empty<tr><td colspan="5">Belum ada jadwal.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'peserta-kelas')
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'students', 'tab' => $tab]) }}">@csrf
@@ -159,7 +133,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Mahasiswa</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($classStudents as $row)<tr><form method="post" action="{{ route('classes.update', ['resource' => 'students', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('PATCH')
                         <td><select name="classId">@foreach($classes as $class)<option value="{{ $class->id }}" @selected($row->classId === $class->id)>{{ $classLabel($class) }}</option>@endforeach</select></td><td><select name="studentId">@foreach($plainStudents as $student)<option value="{{ $student->id }}" @selected($row->studentId === $student->id)>{{ $student->nim }} - {{ $student->name }}</option>@endforeach</select></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'students', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('students', 'ClassStudent', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'students', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'students', 'table' => 'ClassStudent', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                     </tr>@empty<tr><td colspan="3">Belum ada peserta.</td></tr>@endforelse</tbody></table></div>
                 @elseif(in_array($tab, ['presensi-kelas','jadwal-presensi'], true))
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'meetings', 'tab' => $tab]) }}">@csrf
@@ -171,7 +145,7 @@
                     <div class="table-wrap"><table><thead><tr><th>MK</th><th>Pertemuan</th><th>Mahasiswa</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($attendances as $row)<tr><form method="post" action="{{ route('classes.update', ['resource' => 'attendances', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('PATCH')
                         <td>{{ $row->courseCode }} - {{ $row->courseName }}</td><td><select name="meetingId">@foreach($meetings as $meeting)<option value="{{ $meeting->id }}" @selected($row->meetingId === $meeting->id)>P{{ $meeting->meetingNo }} - {{ substr($meeting->meetingDate,0,10) }}</option>@endforeach</select></td><td><select name="classStudentId">@foreach($classStudents as $student)<option value="{{ $student->id }}" @selected($row->classStudentId === $student->id)>{{ $student->nim }} - {{ $student->studentName }}</option>@endforeach</select></td><td><select name="status">@foreach(['PRESENT','PERMIT','SICK','ABSENT'] as $status)<option value="{{ $status }}" @selected($row->status === $status)>{{ $status }}</option>@endforeach</select></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'attendances', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('attendances', 'Attendance', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'attendances', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'attendances', 'table' => 'Attendance', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                     </tr>@empty<tr><td colspan="5">Belum ada presensi.</td></tr>@endforelse</tbody></table></div>
                 @elseif(in_array($tab, ['nilai-perkuliahan','pemutihan-nilai'], true))
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'grades', 'tab' => $tab]) }}">@csrf
@@ -180,7 +154,7 @@
                     <div class="table-wrap"><table><thead><tr><th>MK</th><th>Mahasiswa</th><th>Nilai</th><th>Huruf</th><th>Kunci</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($grades as $row)<tr><form method="post" action="{{ route('classes.update', ['resource' => 'grades', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('PATCH')
                         <td>{{ $row->courseCode }} - {{ $row->courseName }}</td><td><select name="classStudentId">@foreach($classStudents as $student)<option value="{{ $student->id }}" @selected($row->classStudentId === $student->id)>{{ $student->nim }} - {{ $student->studentName }}</option>@endforeach</select></td><td><input type="number" name="score" min="0" max="100" value="{{ $row->score }}"></td><td><input name="letter" value="{{ $row->letter }}"></td><td><input type="checkbox" name="isLocked" value="1" style="width:auto" @checked($row->isLocked)></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'grades', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('grades', 'Grade', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'grades', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'grades', 'table' => 'Grade', 'id' => $row->id, 'storeRoute' => 'classes.attachments.store', 'destroyRoute' => 'classes.attachments.destroy', 'extraParams' => ['tab' => $tab]])</td>
                     </tr>@empty<tr><td colspan="6">Belum ada nilai.</td></tr>@endforelse</tbody></table></div>
                 @endif
             </div>

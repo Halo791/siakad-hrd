@@ -22,25 +22,6 @@
     @media(max-width:900px){.portal-grid,.stats,.form-grid,.mini-form{grid-template-columns:1fr}.portal-side{border-right:0;border-bottom:1px solid #e5e7eb}}
 </style>
 
-@php
-    $attachmentBlock = function (string $resource, string $table, string $id) use ($attachmentsFor, $previewUrl) {
-        $items = $attachmentsFor($table, $id);
-@endphp
-        <div class="preview-grid">
-            @foreach($items as $attachment)
-                <span><img class="preview-img" src="{{ $previewUrl($attachment->imageUrl) }}" alt="{{ $attachment->title }}"><form method="post" action="{{ route('portal.attachments.destroy', $attachment->id) }}">@csrf @method('DELETE')<button class="badge gray" type="submit" style="border:0;margin-top:4px">Hapus</button></form></span>
-            @endforeach
-        </div>
-        <form class="mini-form" method="post" action="{{ route('portal.attachments.store', ['resource' => $resource, 'id' => $id]) }}">
-            @csrf
-            <label>Judul gambar<input name="title" placeholder="Foto / tanda tangan / bukti"></label>
-            <label>Link Google Drive / gambar<input name="imageUrl" placeholder="https://drive.google.com/file/d/.../view"></label>
-            <button class="btn" type="submit">Upload Link</button>
-        </form>
-@php
-    };
-@endphp
-
 <div class="panel">
     <div class="portal-grid">
         <aside class="portal-side">
@@ -60,7 +41,7 @@
                     <div class="table-wrap"><table><thead><tr><th>NIDN</th><th>Nama</th><th>User</th><th>Prodi</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($lecturers as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'lecturers', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><input name="nidn" value="{{ $row->nidn }}"></td><td><input name="name" value="{{ $row->name }}"></td><td><select name="userId">@foreach($users as $user)<option value="{{ $user->id }}" @selected($row->userId === $user->id)>{{ $user->name }}</option>@endforeach</select></td><td><select name="studyProgramId"><option value="">-</option>@foreach($studyPrograms as $program)<option value="{{ $program->id }}" @selected($row->studyProgramId === $program->id)>{{ $program->code }}</option>@endforeach</select></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'lecturers', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('lecturers', 'Lecturer', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'lecturers', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'lecturers', 'table' => 'Lecturer', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</td>
                     </tr>@empty<tr><td colspan="5">Belum ada pegawai/dosen.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'pembimbing')
                     <form class="crud-card form-grid" method="post" action="{{ route('portal.records.store', ['resource' => 'advisors']) }}">@csrf
@@ -69,7 +50,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Pembimbing</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($advisors as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'advisors', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><select name="studentId">@foreach($students as $student)<option value="{{ $student->id }}" @selected($row->studentId === $student->id)>{{ $student->nim }} - {{ $student->name }}</option>@endforeach</select></td><td><select name="lecturerId">@foreach($lecturers as $lecturer)<option value="{{ $lecturer->id }}" @selected($row->lecturerId === $lecturer->id)>{{ $lecturer->name }}</option>@endforeach</select></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'advisors', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('advisors', 'AcademicAdvisor', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'advisors', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'advisors', 'table' => 'AcademicAdvisor', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</td>
                     </tr>@empty<tr><td colspan="3">Belum ada pembimbing.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'kalender-akademik')
                     <form class="crud-card form-grid" method="post" action="{{ route('portal.records.store', ['resource' => 'periods']) }}">@csrf
@@ -78,7 +59,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama</th><th>Mulai</th><th>Selesai</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($periods as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'periods', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><input name="code" value="{{ $row->code }}"></td><td><input name="name" value="{{ $row->name }}"></td><td><input type="date" name="startDate" value="{{ substr($row->startDate,0,10) }}"></td><td><input type="date" name="endDate" value="{{ substr($row->endDate,0,10) }}"></td><td><select name="academicYearId">@foreach($academicYears as $year)<option value="{{ $year->id }}" @selected($row->academicYearId === $year->id)>{{ $year->code }}</option>@endforeach</select><label><input type="checkbox" name="isActive" value="1" style="width:auto" @checked($row->isActive)> Aktif</label></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'periods', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('periods', 'AcademicPeriod', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'periods', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'periods', 'table' => 'AcademicPeriod', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</td>
                     </tr>@empty<tr><td colspan="6">Belum ada periode.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'monitoring-kalender-akademik')
                     <form class="crud-card form-grid" method="post" action="{{ route('portal.records.store', ['resource' => 'settings']) }}">@csrf
@@ -87,7 +68,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Periode</th><th>Prodi</th><th>KRS</th><th>Presensi</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($studyProgramSettings as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'settings', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><select name="periodId">@foreach($periods as $period)<option value="{{ $period->id }}" @selected($row->periodId === $period->id)>{{ $period->name }}</option>@endforeach</select></td><td><select name="studyProgramId">@foreach($studyPrograms as $program)<option value="{{ $program->id }}" @selected($row->studyProgramId === $program->id)>{{ $program->code }}</option>@endforeach</select></td><td><input type="checkbox" name="openKrs" value="1" style="width:auto" @checked($row->openKrs)> Buka</td><td><input type="number" name="minAttendanceUts" value="{{ $row->minAttendanceUts }}"><input type="number" name="minAttendanceUas" value="{{ $row->minAttendanceUas }}"><input type="number" name="totalMeetings" value="{{ $row->totalMeetings }}"></td>
-                        <td><input type="hidden" name="openKrsValidation" value="{{ $row->openKrsValidation }}"><input type="hidden" name="openPrintKrs" value="{{ $row->openPrintKrs }}"><input type="hidden" name="openPrintUts" value="{{ $row->openPrintUts }}"><input type="hidden" name="openPrintUas" value="{{ $row->openPrintUas }}"><input type="hidden" name="allowLecturerGenerate" value="{{ $row->allowLecturerGenerate }}"><input type="hidden" name="allowLecturerEditGrade" value="{{ $row->allowLecturerEditGrade }}"><div class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'settings', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('settings', 'StudyProgramSetting', $row->id) !!}</div></td>
+                        <td><input type="hidden" name="openKrsValidation" value="{{ $row->openKrsValidation }}"><input type="hidden" name="openPrintKrs" value="{{ $row->openPrintKrs }}"><input type="hidden" name="openPrintUts" value="{{ $row->openPrintUts }}"><input type="hidden" name="openPrintUas" value="{{ $row->openPrintUas }}"><input type="hidden" name="allowLecturerGenerate" value="{{ $row->allowLecturerGenerate }}"><input type="hidden" name="allowLecturerEditGrade" value="{{ $row->allowLecturerEditGrade }}"><div class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'settings', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'settings', 'table' => 'StudyProgramSetting', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</div></td>
                     </tr>@empty<tr><td colspan="5">Belum ada setting.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'monitoring-mahasiswa')
                     <form class="crud-card form-grid" method="post" action="{{ route('portal.records.store', ['resource' => 'parents']) }}">@csrf
@@ -96,7 +77,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Nama Wali</th><th>Relasi</th><th>Telepon</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($parentRows as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'parents', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><select name="studentId">@foreach($students as $student)<option value="{{ $student->id }}" @selected($row->studentId === $student->id)>{{ $student->nim }} - {{ $student->name }}</option>@endforeach</select></td><td><input name="name" value="{{ $row->name }}"></td><td><input name="relation" value="{{ $row->relation }}"></td><td><input name="phone" value="{{ $row->phone }}"></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'parents', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('parents', 'StudentParent', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'parents', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'parents', 'table' => 'StudentParent', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</td>
                     </tr>@empty<tr><td colspan="5">Belum ada wali.</td></tr>@endforelse</tbody></table></div>
                 @elseif($tab === 'profil-alumni')
                     <form class="crud-card form-grid" method="post" action="{{ route('portal.records.store', ['resource' => 'alumni']) }}">@csrf
@@ -105,7 +86,7 @@
                     <div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Periode</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
                     @forelse($alumniRows as $row)<tr><form method="post" action="{{ route('portal.records.update', ['resource' => 'alumni', 'id' => $row->id]) }}">@csrf @method('PATCH')
                         <td><select name="studentId">@foreach($students as $student)<option value="{{ $student->id }}" @selected($row->studentId === $student->id)>{{ $student->nim }} - {{ $student->name }}</option>@endforeach</select></td><td><select name="graduationPeriodId">@foreach($graduationPeriods as $period)<option value="{{ $period->id }}" @selected($row->graduationPeriodId === $period->id)>{{ $period->code }}</option>@endforeach</select></td><td><input name="status" value="{{ $row->status }}"></td>
-                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'alumni', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>{!! $attachmentBlock('alumni', 'GraduationStudent', $row->id) !!}</td>
+                        <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('portal.records.destroy', ['resource' => 'alumni', 'id' => $row->id]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form>@include('partials.record-attachments', ['resource' => 'alumni', 'table' => 'GraduationStudent', 'id' => $row->id, 'storeRoute' => 'portal.attachments.store', 'destroyRoute' => 'portal.attachments.destroy'])</td>
                     </tr>@empty<tr><td colspan="4">Belum ada alumni.</td></tr>@endforelse</tbody></table></div>
                 @endif
             </div>
