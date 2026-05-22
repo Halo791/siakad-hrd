@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PortalController;
@@ -23,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/portal/mahasiswa', [StudentPortalController::class, 'index'])->name('portal.mahasiswa');
     Route::get('/portal/{section}', [PortalController::class, 'index'])->whereIn('section', ['pegawai', 'kegiatan', 'orang-tua', 'alumni'])->name('portal.index');
+    Route::get('/perkuliahan/data-kurikulum', [CurriculumController::class, 'index'])->name('curriculum.index');
     Route::get('/master/mahasiswa', [MasterController::class, 'students'])->name('master.students');
     Route::get('/master/dosen', [MasterController::class, 'lecturers'])->name('master.lecturers');
     Route::get('/master/fakultas-prodi', [MasterController::class, 'faculties'])->name('master.faculties');

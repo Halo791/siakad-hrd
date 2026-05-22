@@ -2,6 +2,7 @@
     $planned = fn (string $path) => route('dashboard', ['menu' => $path]);
     $studentPortal = fn (string $tab) => route('portal.mahasiswa', ['tab' => $tab] + (request('studentId') ? ['studentId' => request('studentId')] : []));
     $portal = fn (string $section, string $tab) => route('portal.index', ['section' => $section, 'tab' => $tab]);
+    $curriculum = fn (string $tab) => route('curriculum.index', ['tab' => $tab]);
     $menuGroups = [
         [
             'label' => 'Beranda', 'description' => 'Ringkasan sistem', 'items' => [
@@ -47,18 +48,18 @@
         ],
         [
             'label' => 'Perkuliahan', 'description' => 'Proses akademik', 'items' => [
-                ['label' => 'Data Kurikulum', 'children' => [
-                    ['label' => 'Tahun Kurikulum', 'href' => $planned('Perkuliahan > Data Kurikulum > Tahun Kurikulum')],
-                    ['label' => 'Mata Kuliah', 'href' => $planned('Perkuliahan > Data Kurikulum > Mata Kuliah')],
-                    ['label' => 'Kurikulum Prodi', 'href' => $planned('Perkuliahan > Data Kurikulum > Kurikulum Prodi')],
-                    ['label' => 'Skala Nilai', 'href' => $planned('Perkuliahan > Data Kurikulum > Skala Nilai')],
-                    ['label' => 'Komposisi Nilai', 'href' => $planned('Perkuliahan > Data Kurikulum > Komposisi Nilai')],
-                    ['label' => 'Predikat Kelulusan', 'href' => $planned('Perkuliahan > Data Kurikulum > Predikat Kelulusan')],
-                    ['label' => 'Aturan Evaluasi', 'href' => $planned('Perkuliahan > Data Kurikulum > Aturan Evaluasi')],
-                    ['label' => 'Ekivalensi Mata Kuliah', 'href' => $planned('Perkuliahan > Data Kurikulum > Ekivalensi Mata Kuliah')],
-                    ['label' => 'Kurikulum Konsentrasi', 'href' => $planned('Perkuliahan > Data Kurikulum > Kurikulum Konsentrasi')],
-                    ['label' => 'Prasyarat Mata Kuliah', 'href' => $planned('Perkuliahan > Data Kurikulum > Prasyarat Mata Kuliah')],
-                    ['label' => 'Set Grup MK Wajib Pilihan', 'href' => $planned('Perkuliahan > Data Kurikulum > Set Grup MK Wajib Pilihan')],
+                ['label' => 'Data Kurikulum', 'active' => request()->routeIs('curriculum.index'), 'children' => [
+                    ['label' => 'Tahun Kurikulum', 'href' => $curriculum('tahun-kurikulum'), 'active' => request()->routeIs('curriculum.index') && request('tab', 'tahun-kurikulum') === 'tahun-kurikulum'],
+                    ['label' => 'Mata Kuliah', 'href' => $curriculum('mata-kuliah'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'mata-kuliah'],
+                    ['label' => 'Kurikulum Prodi', 'href' => $curriculum('kurikulum-prodi'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'kurikulum-prodi'],
+                    ['label' => 'Skala Nilai', 'href' => $curriculum('skala-nilai'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'skala-nilai'],
+                    ['label' => 'Komposisi Nilai', 'href' => $curriculum('komposisi-nilai'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'komposisi-nilai'],
+                    ['label' => 'Predikat Kelulusan', 'href' => $curriculum('predikat-kelulusan'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'predikat-kelulusan'],
+                    ['label' => 'Aturan Evaluasi', 'href' => $curriculum('aturan-evaluasi'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'aturan-evaluasi'],
+                    ['label' => 'Ekivalensi Mata Kuliah', 'href' => $curriculum('ekivalensi-mata-kuliah'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'ekivalensi-mata-kuliah'],
+                    ['label' => 'Kurikulum Konsentrasi', 'href' => $curriculum('kurikulum-konsentrasi'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'kurikulum-konsentrasi'],
+                    ['label' => 'Prasyarat Mata Kuliah', 'href' => $curriculum('prasyarat-mata-kuliah'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'prasyarat-mata-kuliah'],
+                    ['label' => 'Set Grup MK Wajib Pilihan', 'href' => $curriculum('grup-mk-wajib-pilihan'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'grup-mk-wajib-pilihan'],
                 ]],
                 ['label' => 'Data Kelas', 'children' => [
                     ['label' => 'Tahun Ajaran', 'href' => $planned('Perkuliahan > Data Kelas > Tahun Ajaran')],
