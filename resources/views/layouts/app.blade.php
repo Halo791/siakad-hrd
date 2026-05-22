@@ -1,5 +1,6 @@
 @php
     $planned = fn (string $path) => route('dashboard', ['menu' => $path]);
+    $studentPortal = fn (string $tab) => route('portal.mahasiswa', ['tab' => $tab] + (request('studentId') ? ['studentId' => request('studentId')] : []));
     $menuGroups = [
         [
             'label' => 'Beranda', 'description' => 'Ringkasan sistem', 'items' => [
@@ -10,20 +11,20 @@
         ],
         [
             'label' => 'Portal', 'description' => 'Pusat data pengguna', 'items' => [
-                ['label' => 'Mahasiswa', 'active' => request()->routeIs('master.students'), 'children' => [
-                    ['label' => 'Daftar Mahasiswa', 'href' => route('master.students'), 'active' => request()->routeIs('master.students')],
-                    ['label' => 'Detail Mahasiswa', 'href' => $planned('Portal > Mahasiswa > Detail Mahasiswa')],
-                    ['label' => 'Biodata', 'href' => $planned('Portal > Mahasiswa > Biodata')],
-                    ['label' => 'Status Semester', 'href' => $planned('Portal > Mahasiswa > Status Semester')],
-                    ['label' => 'KRS', 'href' => $planned('Portal > Mahasiswa > KRS')],
-                    ['label' => 'KHS', 'href' => $planned('Portal > Mahasiswa > KHS')],
-                    ['label' => 'Transkrip', 'href' => $planned('Portal > Mahasiswa > Transkrip')],
-                    ['label' => 'Riwayat Keuangan', 'href' => $planned('Portal > Mahasiswa > Riwayat Keuangan')],
-                    ['label' => 'Konsentrasi/Peminatan', 'href' => $planned('Portal > Mahasiswa > Konsentrasi/Peminatan')],
-                    ['label' => 'Pindah/Transfer Prodi', 'href' => $planned('Portal > Mahasiswa > Pindah/Transfer Prodi')],
-                    ['label' => 'Nilai Konversi', 'href' => $planned('Portal > Mahasiswa > Nilai Konversi')],
-                    ['label' => 'Aktivitas & Prestasi', 'href' => $planned('Portal > Mahasiswa > Aktivitas & Prestasi')],
-                    ['label' => 'Salin Mahasiswa', 'href' => $planned('Portal > Mahasiswa > Salin Mahasiswa')],
+                ['label' => 'Mahasiswa', 'active' => request()->routeIs('portal.mahasiswa') || request()->routeIs('master.students'), 'children' => [
+                    ['label' => 'Daftar Mahasiswa', 'href' => $studentPortal('daftar-mahasiswa'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab', 'daftar-mahasiswa') === 'daftar-mahasiswa'],
+                    ['label' => 'Detail Mahasiswa', 'href' => $studentPortal('detail-mahasiswa'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'detail-mahasiswa'],
+                    ['label' => 'Biodata', 'href' => $studentPortal('biodata'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'biodata'],
+                    ['label' => 'Status Semester', 'href' => $studentPortal('status-semester'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'status-semester'],
+                    ['label' => 'KRS', 'href' => $studentPortal('krs'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'krs'],
+                    ['label' => 'KHS', 'href' => $studentPortal('khs'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'khs'],
+                    ['label' => 'Transkrip', 'href' => $studentPortal('transkrip'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'transkrip'],
+                    ['label' => 'Riwayat Keuangan', 'href' => $studentPortal('riwayat-keuangan'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'riwayat-keuangan'],
+                    ['label' => 'Konsentrasi/Peminatan', 'href' => $studentPortal('konsentrasi-peminatan'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'konsentrasi-peminatan'],
+                    ['label' => 'Pindah/Transfer Prodi', 'href' => $studentPortal('pindah-transfer-prodi'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'pindah-transfer-prodi'],
+                    ['label' => 'Nilai Konversi', 'href' => $studentPortal('nilai-konversi'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'nilai-konversi'],
+                    ['label' => 'Aktivitas & Prestasi', 'href' => $studentPortal('aktivitas-prestasi'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'aktivitas-prestasi'],
+                    ['label' => 'Salin Mahasiswa', 'href' => $studentPortal('salin-mahasiswa'), 'active' => request()->routeIs('portal.mahasiswa') && request('tab') === 'salin-mahasiswa'],
                 ]],
                 ['label' => 'Pegawai', 'active' => request()->routeIs('master.lecturers'), 'children' => [
                     ['label' => 'Daftar Pegawai/Dosen', 'href' => route('master.lecturers'), 'active' => request()->routeIs('master.lecturers')],
