@@ -85,7 +85,9 @@ class ClassDataController extends Controller
     {
         $table = $this->tableFor($resource);
         $this->table($table)->where('id', $id)->delete();
-        $this->table('RecordAttachment')->where('entityTable', $table)->where('entityId', $id)->delete();
+        if ($this->tableExists('RecordAttachment')) {
+            DB::table('RecordAttachment')->where('entityTable', $table)->where('entityId', $id)->delete();
+        }
 
         return back()->with('success', 'Data berhasil dihapus.');
     }
@@ -93,7 +95,9 @@ class ClassDataController extends Controller
     public function storeAttachment(Request $request, string $resource, string $id)
     {
         $table = $this->tableFor($resource);
-        $this->ensureAttachmentTable();
+        if (!$this->ensureAttachmentTable()) {
+            return back()->withErrors(['imageUrl' => 'Tabel RecordAttachment belum tersedia atau user database tidak punya izin membuat tabel.']);
+        }
         $data = $request->validate([
             'title' => ['required', 'string', 'max:191'],
             'imageUrl' => ['required', 'url', 'max:500'],
@@ -114,7 +118,9 @@ class ClassDataController extends Controller
     public function destroyAttachment(string $id)
     {
         $this->ensureAttachmentTable();
-        $this->table('RecordAttachment')->where('id', $id)->delete();
+        if ($this->tableExists('RecordAttachment')) {
+            DB::table('RecordAttachment')->where('id', $id)->delete();
+        }
 
         return back()->with('success', 'Lampiran gambar berhasil dihapus.');
     }
@@ -272,7 +278,9 @@ class ClassDataController extends Controller
 
     private function attachments()
     {
-        return $this->table('RecordAttachment')->get()->groupBy(fn ($row) => $row->entityTable.'|'.$row->entityId);
+        if (!$this->tableExists('RecordAttachment')) return collect();
+
+        return DB::table('RecordAttachment')->get()->groupBy(fn ($row) => $row->entityTable.'|'.$row->entityId);
     }
 
     private function stats(): array
@@ -294,18 +302,25 @@ class ClassDataController extends Controller
         return DB::table($table);
     }
 
-    private function ensureAttachmentTable(): void
+    private function ensureAttachmentTable(): bool
     {
-        DB::statement("CREATE TABLE IF NOT EXISTS `RecordAttachment` (
-            `id` VARCHAR(191) NOT NULL,
-            `entityTable` VARCHAR(191) NOT NULL,
-            `entityId` VARCHAR(191) NOT NULL,
-            `title` VARCHAR(191) NOT NULL,
-            `imageUrl` VARCHAR(500) NOT NULL,
-            `createdAt` DATETIME NULL,
-            PRIMARY KEY (`id`),
-            KEY `RecordAttachment_entity_idx` (`entityTable`, `entityId`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        if ($this->tableExists('RecordAttachment')) return true;
+
+        try {
+            DB::statement("CREATE TABLE IF NOT EXISTS `RecordAttachment` (
+                `id` VARCHAR(191) NOT NULL,
+                `entityTable` VARCHAR(191) NOT NULL,
+                `entityId` VARCHAR(191) NOT NULL,
+                `title` VARCHAR(191) NOT NULL,
+                `imageUrl` VARCHAR(500) NOT NULL,
+                `createdAt` DATETIME NULL,
+                PRIMARY KEY (`id`),
+                KEY `RecordAttachment_entity_idx` (`entityTable`, `entityId`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function previewUrl(?string $url): ?string

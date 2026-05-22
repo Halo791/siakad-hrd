@@ -25,7 +25,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/portal/mahasiswa', [StudentPortalController::class, 'index'])->name('portal.mahasiswa');
     Route::get('/portal/{section}', [PortalController::class, 'index'])->whereIn('section', ['pegawai', 'kegiatan', 'orang-tua', 'alumni'])->name('portal.index');
+    Route::post('/portal/attachments/{resource}/{id}', [PortalController::class, 'storeAttachment'])->name('portal.attachments.store');
+    Route::delete('/portal/attachments/{id}', [PortalController::class, 'destroyAttachment'])->name('portal.attachments.destroy');
+    Route::post('/portal/records/{resource}', [PortalController::class, 'store'])->name('portal.records.store');
+    Route::patch('/portal/records/{resource}/{id}', [PortalController::class, 'update'])->name('portal.records.update');
+    Route::delete('/portal/records/{resource}/{id}', [PortalController::class, 'destroy'])->name('portal.records.destroy');
     Route::get('/perkuliahan/data-kurikulum', [CurriculumController::class, 'index'])->name('curriculum.index');
+    Route::post('/perkuliahan/data-kurikulum/attachments/{resource}/{id}', [CurriculumController::class, 'storeAttachment'])->name('curriculum.attachments.store');
+    Route::delete('/perkuliahan/data-kurikulum/attachments/{id}', [CurriculumController::class, 'destroyAttachment'])->name('curriculum.attachments.destroy');
+    Route::post('/perkuliahan/data-kurikulum/{resource}', [CurriculumController::class, 'store'])->name('curriculum.store');
+    Route::patch('/perkuliahan/data-kurikulum/{resource}/{id}', [CurriculumController::class, 'update'])->name('curriculum.update');
+    Route::delete('/perkuliahan/data-kurikulum/{resource}/{id}', [CurriculumController::class, 'destroy'])->name('curriculum.destroy');
     Route::get('/perkuliahan/data-kelas', [ClassDataController::class, 'index'])->name('classes.index');
     Route::post('/perkuliahan/data-kelas/attachments/{resource}/{id}', [ClassDataController::class, 'storeAttachment'])->name('classes.attachments.store');
     Route::delete('/perkuliahan/data-kelas/attachments/{id}', [ClassDataController::class, 'destroyAttachment'])->name('classes.attachments.destroy');

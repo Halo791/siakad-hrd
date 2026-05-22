@@ -537,6 +537,17 @@ CREATE TABLE IF NOT EXISTS `StudentDocument` (
   CONSTRAINT `StudentDocument_studentId_fkey` FOREIGN KEY (`studentId`) REFERENCES `Student` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `RecordAttachment` (
+  `id` VARCHAR(191) NOT NULL,
+  `entityTable` VARCHAR(191) NOT NULL,
+  `entityId` VARCHAR(191) NOT NULL,
+  `title` VARCHAR(191) NOT NULL,
+  `imageUrl` VARCHAR(500) NOT NULL,
+  `createdAt` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  KEY `RecordAttachment_entity_idx` (`entityTable`, `entityId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO `University` (`id`, `code`, `name`) VALUES
