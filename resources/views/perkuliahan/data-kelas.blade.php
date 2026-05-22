@@ -145,7 +145,7 @@
                         <td>{{ $row->courseCode ?? '-' }} - {{ $row->courseName ?? '-' }} / {{ $row->className ?? '-' }}</td><td>{{ $row->nim ?? '-' }} - {{ $row->studentName ?? '-' }}</td>
                         <td class="action-row"><form method="post" action="{{ route('classes.destroy', ['resource' => 'students', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form></td>
                     </tr>@empty<tr><td colspan="3">Belum ada peserta.</td></tr>@endforelse</tbody></table></div>
-                    @if(method_exists($classStudents, 'links'))<div class="pager">{{ $classStudents->links() }}</div>@endif
+                    @if(method_exists($classStudents, 'links'))<div class="pager">{{ $classStudents->links('partials.pagination') }}</div>@endif
                 @elseif(in_array($tab, ['presensi-kelas','jadwal-presensi'], true))
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'meetings', 'tab' => $tab]) }}">@csrf
                         <label>Kelas<select name="classId">@foreach($classes as $class)<option value="{{ $class->id }}">{{ $classLabel($class) }}</option>@endforeach</select></label><label>Pertemuan<input type="number" name="meetingNo" min="1" value="1"></label><label>Tanggal<input type="date" name="meetingDate"></label><button class="btn" type="submit">Tambah Pertemuan</button>
@@ -158,7 +158,7 @@
                         <td>{{ $row->courseCode ?? '-' }} - {{ $row->courseName ?? '-' }}</td><td>P{{ $row->meetingNo ?? '-' }} - {{ substr((string) ($row->meetingDate ?? ''),0,10) }}<input type="hidden" name="meetingId" value="{{ $row->meetingId }}"></td><td>{{ $row->nim ?? '-' }} - {{ $row->studentName ?? '-' }}<input type="hidden" name="classStudentId" value="{{ $row->classStudentId }}"></td><td><select name="status">@foreach(['PRESENT','PERMIT','SICK','ABSENT'] as $status)<option value="{{ $status }}" @selected(($row->status ?? '') === $status)>{{ $status }}</option>@endforeach</select></td>
                         <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'attendances', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form></td>
                     </tr>@empty<tr><td colspan="5">Belum ada presensi.</td></tr>@endforelse</tbody></table></div>
-                    @if(method_exists($attendances, 'links'))<div class="pager">{{ $attendances->links() }}</div>@endif
+                    @if(method_exists($attendances, 'links'))<div class="pager">{{ $attendances->links('partials.pagination') }}</div>@endif
                 @elseif(in_array($tab, ['nilai-perkuliahan','pemutihan-nilai'], true))
                     <form class="crud-card form-grid" method="post" action="{{ route('classes.store', ['resource' => 'grades', 'tab' => $tab]) }}">@csrf
                         <label>Peserta<select name="classStudentId">@foreach($classStudentOptions as $student)<option value="{{ $student->id }}">{{ $student->courseCode ?? '-' }} - {{ $student->nim ?? '-' }} {{ $student->studentName ?? '-' }}</option>@endforeach</select></label><label>Nilai<input type="number" name="score" min="0" max="100" value="0"></label><label>Huruf<input name="letter" value="A"></label><label><input type="checkbox" name="isLocked" value="1" style="width:auto"> Kunci Nilai</label><button class="btn" type="submit">Tambah Nilai</button>
@@ -168,7 +168,7 @@
                         <td>{{ $row->courseCode ?? '-' }} - {{ $row->courseName ?? '-' }}</td><td>{{ $row->nim ?? '-' }} - {{ $row->studentName ?? '-' }}<input type="hidden" name="classStudentId" value="{{ $row->classStudentId }}"></td><td><input type="number" name="score" min="0" max="100" value="{{ $row->score ?? 0 }}"></td><td><input name="letter" value="{{ $row->letter ?? 'A' }}"></td><td><input type="checkbox" name="isLocked" value="1" style="width:auto" @checked(!empty($row->isLocked))></td>
                         <td class="action-row"><button class="btn" type="submit">Update</button></form><form method="post" action="{{ route('classes.destroy', ['resource' => 'grades', 'id' => $row->id, 'tab' => $tab]) }}">@csrf @method('DELETE')<button class="btn danger" type="submit">Hapus</button></form></td>
                     </tr>@empty<tr><td colspan="6">Belum ada nilai.</td></tr>@endforelse</tbody></table></div>
-                    @if(method_exists($grades, 'links'))<div class="pager">{{ $grades->links() }}</div>@endif
+                    @if(method_exists($grades, 'links'))<div class="pager">{{ $grades->links('partials.pagination') }}</div>@endif
                 @endif
             </div>
         </main>

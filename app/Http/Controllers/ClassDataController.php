@@ -326,9 +326,7 @@ class ClassDataController extends Controller
 
     private function perPage(Request $request): int
     {
-        $perPage = (int) $request->query('per_page', 50);
-
-        return min(100, max(10, $perPage));
+        return 15;
     }
 
     private function countRows(string $table): int

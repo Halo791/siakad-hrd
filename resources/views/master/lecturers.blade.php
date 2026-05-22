@@ -22,6 +22,6 @@
         @endforelse
         </tbody>
     </table></div>
-    <div class="pager">{{ $lecturers->links() }}</div>
+    <div class="pager">{{ $lecturers->links('partials.pagination') }}</div>
 </div>
 @endsection

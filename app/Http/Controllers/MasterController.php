@@ -12,14 +12,14 @@ class MasterController extends Controller
     public function students()
     {
         return view('master.students', [
-            'students' => Student::with(['user', 'studyProgram.faculty'])->orderBy('nim')->paginate(25),
+            'students' => Student::with(['user', 'studyProgram.faculty'])->orderBy('nim')->paginate(15),
         ]);
     }
 
     public function lecturers()
     {
         return view('master.lecturers', [
-            'lecturers' => Lecturer::with(['user', 'studyProgram'])->orderBy('name')->paginate(25),
+            'lecturers' => Lecturer::with(['user', 'studyProgram'])->orderBy('name')->paginate(15),
         ]);
     }
 
