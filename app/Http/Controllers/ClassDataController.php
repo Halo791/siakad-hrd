@@ -36,19 +36,18 @@ class ClassDataController extends Controller
     public function index(Request $request)
     {
         $tab = in_array($request->query('tab'), $this->tabs, true) ? $request->query('tab') : 'tahun-ajaran';
-        $this->ensureAttachmentTable();
 
         return view('perkuliahan.data-kelas', [
             'tab' => $tab,
             'tabs' => $this->tabs,
-            'academicYears' => $this->table('AcademicYear')->orderByDesc('code')->get(),
-            'studyPrograms' => $this->table('StudyProgram')->orderBy('code')->get(),
-            'courses' => $this->table('Course')->orderBy('code')->get(),
-            'plainClasses' => $this->table('Class')->orderBy('name')->get(),
-            'plainLecturers' => $this->table('Lecturer')->orderBy('name')->get(),
-            'plainStudents' => $this->table('Student')->orderBy('nim')->get(),
-            'plainClassStudents' => $this->table('ClassStudent')->orderBy('id')->get(),
-            'plainMeetings' => $this->table('Meeting')->orderBy('meetingDate')->get(),
+            'academicYears' => $this->rows('AcademicYear', 'code', true),
+            'studyPrograms' => $this->rows('StudyProgram', 'code'),
+            'courses' => $this->rows('Course', 'code'),
+            'plainClasses' => $this->rows('Class', 'name'),
+            'plainLecturers' => $this->rows('Lecturer', 'name'),
+            'plainStudents' => $this->rows('Student', 'nim'),
+            'plainClassStudents' => $this->rows('ClassStudent'),
+            'plainMeetings' => $this->rows('Meeting', 'meetingDate'),
             'periods' => $this->periods(),
             'classes' => $this->classes(),
             'classLecturers' => $this->classLecturers(),
@@ -57,8 +56,6 @@ class ClassDataController extends Controller
             'meetings' => $this->meetings(),
             'attendances' => $this->attendances(),
             'grades' => $this->grades(),
-            'attachments' => $this->attachments(),
-            'previewUrl' => fn (?string $url) => $this->previewUrl($url),
             'stats' => $this->stats(),
         ]);
     }
@@ -187,110 +184,158 @@ class ClassDataController extends Controller
 
     private function periods()
     {
-        return $this->table('AcademicPeriod')
+        if (!$this->hasTables(['AcademicPeriod'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('AcademicPeriod')
             ->leftJoin('AcademicYear', 'AcademicPeriod.academicYearId', '=', 'AcademicYear.id')
             ->select('AcademicPeriod.*', 'AcademicYear.name as academicYearName')
             ->orderByDesc('AcademicPeriod.code')
-            ->get();
+            ->get());
     }
 
     private function classes()
     {
-        return $this->table('Class')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
-            ->join('AcademicPeriod', 'Class.periodId', '=', 'AcademicPeriod.id')
+        if (!$this->hasTables(['Class'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('Class')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
+            ->leftJoin('AcademicPeriod', 'Class.periodId', '=', 'AcademicPeriod.id')
             ->leftJoin('StudyProgram', 'Class.studyProgramId', '=', 'StudyProgram.id')
             ->select('Class.*', 'Course.code as courseCode', 'Course.name as courseName', 'Course.sks', 'AcademicPeriod.name as periodName', 'StudyProgram.code as studyProgramCode', 'StudyProgram.name as studyProgramName')
             ->orderByDesc('AcademicPeriod.code')
             ->orderBy('Course.code')
-            ->get();
+            ->get());
     }
 
     private function classLecturers()
     {
-        return $this->table('ClassLecturer')
-            ->join('Class', 'ClassLecturer.classId', '=', 'Class.id')
-            ->join('Lecturer', 'ClassLecturer.lecturerId', '=', 'Lecturer.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
+        if (!$this->hasTables(['ClassLecturer'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('ClassLecturer')
+            ->leftJoin('Class', 'ClassLecturer.classId', '=', 'Class.id')
+            ->leftJoin('Lecturer', 'ClassLecturer.lecturerId', '=', 'Lecturer.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('ClassLecturer.*', 'Class.name as className', 'Course.code as courseCode', 'Course.name as courseName', 'Lecturer.nidn', 'Lecturer.name as lecturerName')
             ->orderBy('Course.code')
-            ->get();
+            ->get());
     }
 
     private function schedules()
     {
-        return $this->table('ClassSchedule')
-            ->join('Class', 'ClassSchedule.classId', '=', 'Class.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
+        if (!$this->hasTables(['ClassSchedule'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('ClassSchedule')
+            ->leftJoin('Class', 'ClassSchedule.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('ClassSchedule.*', 'Class.name as className', 'Course.code as courseCode', 'Course.name as courseName')
             ->orderBy('dayOfWeek')
             ->orderBy('startTime')
-            ->get();
+            ->get());
     }
 
     private function classStudents()
     {
-        return $this->table('ClassStudent')
-            ->join('Class', 'ClassStudent.classId', '=', 'Class.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
-            ->join('Student', 'ClassStudent.studentId', '=', 'Student.id')
+        if (!$this->hasTables(['ClassStudent'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('ClassStudent')
+            ->leftJoin('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
+            ->leftJoin('Student', 'ClassStudent.studentId', '=', 'Student.id')
             ->select('ClassStudent.*', 'Class.name as className', 'Course.code as courseCode', 'Course.name as courseName', 'Student.nim', 'Student.name as studentName')
             ->orderBy('Course.code')
             ->orderBy('Student.nim')
-            ->get();
+            ->get());
     }
 
     private function meetings()
     {
-        return $this->table('Meeting')
-            ->join('Class', 'Meeting.classId', '=', 'Class.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
+        if (!$this->hasTables(['Meeting'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('Meeting')
+            ->leftJoin('Class', 'Meeting.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('Meeting.*', 'Class.name as className', 'Course.code as courseCode', 'Course.name as courseName')
             ->orderBy('Meeting.meetingDate')
-            ->get();
+            ->get());
     }
 
     private function attendances()
     {
-        return $this->table('Attendance')
-            ->join('Meeting', 'Attendance.meetingId', '=', 'Meeting.id')
-            ->join('ClassStudent', 'Attendance.classStudentId', '=', 'ClassStudent.id')
-            ->join('Student', 'ClassStudent.studentId', '=', 'Student.id')
-            ->join('Class', 'ClassStudent.classId', '=', 'Class.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
+        if (!$this->hasTables(['Attendance'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('Attendance')
+            ->leftJoin('Meeting', 'Attendance.meetingId', '=', 'Meeting.id')
+            ->leftJoin('ClassStudent', 'Attendance.classStudentId', '=', 'ClassStudent.id')
+            ->leftJoin('Student', 'ClassStudent.studentId', '=', 'Student.id')
+            ->leftJoin('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('Attendance.*', 'Meeting.meetingNo', 'Meeting.meetingDate', 'Student.nim', 'Student.name as studentName', 'Course.code as courseCode', 'Course.name as courseName')
             ->orderBy('Meeting.meetingDate')
-            ->get();
+            ->get());
     }
 
     private function grades()
     {
-        return $this->table('Grade')
-            ->join('ClassStudent', 'Grade.classStudentId', '=', 'ClassStudent.id')
-            ->join('Student', 'ClassStudent.studentId', '=', 'Student.id')
-            ->join('Class', 'ClassStudent.classId', '=', 'Class.id')
-            ->join('Course', 'Class.courseId', '=', 'Course.id')
+        if (!$this->hasTables(['Grade'])) return collect();
+
+        return $this->safeGet(fn () => $this->table('Grade')
+            ->leftJoin('ClassStudent', 'Grade.classStudentId', '=', 'ClassStudent.id')
+            ->leftJoin('Student', 'ClassStudent.studentId', '=', 'Student.id')
+            ->leftJoin('Class', 'ClassStudent.classId', '=', 'Class.id')
+            ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('Grade.*', 'Student.nim', 'Student.name as studentName', 'Course.code as courseCode', 'Course.name as courseName', 'Class.name as className')
             ->orderBy('Course.code')
             ->orderBy('Student.nim')
-            ->get();
-    }
-
-    private function attachments()
-    {
-        if (!$this->tableExists('RecordAttachment')) return collect();
-
-        return DB::table('RecordAttachment')->get()->groupBy(fn ($row) => $row->entityTable.'|'.$row->entityId);
+            ->get());
     }
 
     private function stats(): array
     {
         return [
-            'periods' => $this->table('AcademicPeriod')->count(),
-            'classes' => $this->table('Class')->count(),
-            'students' => $this->table('ClassStudent')->count(),
-            'grades' => $this->table('Grade')->count(),
+            'periods' => $this->countRows('AcademicPeriod'),
+            'classes' => $this->countRows('Class'),
+            'students' => $this->countRows('ClassStudent'),
+            'grades' => $this->countRows('Grade'),
         ];
+    }
+
+    private function rows(string $table, string $orderBy = 'id', bool $descending = false)
+    {
+        if (!$this->tableExists($table)) return collect();
+
+        return $this->safeGet(function () use ($table, $orderBy, $descending) {
+            $query = DB::table($table);
+            return $descending ? $query->orderByDesc($orderBy)->get() : $query->orderBy($orderBy)->get();
+        });
+    }
+
+    private function countRows(string $table): int
+    {
+        if (!$this->tableExists($table)) return 0;
+
+        try {
+            return DB::table($table)->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    private function hasTables(array $tables): bool
+    {
+        foreach ($tables as $table) {
+            if (!$this->tableExists($table)) return false;
+        }
+
+        return true;
+    }
+
+    private function safeGet(callable $callback)
+    {
+        try {
+            return $callback();
+        } catch (\Throwable) {
+            return collect();
+        }
     }
 
     private function table(string $table)
