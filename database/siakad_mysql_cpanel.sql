@@ -274,6 +274,45 @@ CREATE TABLE IF NOT EXISTS `StudentParent` (
   CONSTRAINT `StudentParent_studentId_fkey` FOREIGN KEY (`studentId`) REFERENCES `Student` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `StudentBiodata` (
+  `id` VARCHAR(191) NOT NULL,
+  `studentId` VARCHAR(191) NOT NULL,
+  `gender` VARCHAR(50) NULL,
+  `birthPlace` VARCHAR(191) NULL,
+  `birthDate` DATE NULL,
+  `religion` VARCHAR(100) NULL,
+  `maritalStatus` VARCHAR(100) NULL,
+  `nationality` VARCHAR(100) NULL,
+  `nik` VARCHAR(50) NULL,
+  `nisn` VARCHAR(50) NULL,
+  `phone` VARCHAR(50) NULL,
+  `alternatePhone` VARCHAR(50) NULL,
+  `email` VARCHAR(191) NULL,
+  `address` VARCHAR(500) NULL,
+  `rt` VARCHAR(10) NULL,
+  `rw` VARCHAR(10) NULL,
+  `village` VARCHAR(191) NULL,
+  `district` VARCHAR(191) NULL,
+  `city` VARCHAR(191) NULL,
+  `province` VARCHAR(191) NULL,
+  `postalCode` VARCHAR(20) NULL,
+  `schoolOrigin` VARCHAR(191) NULL,
+  `graduationYear` INT NULL,
+  `entryYear` INT NULL,
+  `entryPath` VARCHAR(100) NULL,
+  `registrationNumber` VARCHAR(100) NULL,
+  `bloodType` VARCHAR(5) NULL,
+  `jacketSize` VARCHAR(10) NULL,
+  `transportation` VARCHAR(100) NULL,
+  `residenceType` VARCHAR(100) NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `StudentBiodata_studentId_key` (`studentId`),
+  KEY `StudentBiodata_studentId_idx` (`studentId`),
+  CONSTRAINT `StudentBiodata_studentId_fkey` FOREIGN KEY (`studentId`) REFERENCES `Student` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `Curriculum` (
   `id` VARCHAR(191) NOT NULL,
   `studyProgramId` VARCHAR(191) NOT NULL,
@@ -644,6 +683,11 @@ INSERT INTO `Student` (`id`, `userId`, `studyProgramId`, `studentClassId`, `stud
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 INSERT INTO `StudentParent` (`id`, `studentId`, `name`, `relation`, `phone`) VALUES ('parent_mhs1','student_mhs1','Orang Tua Mhs 1','Ayah','081200000001') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `StudentBiodata` (`id`, `studentId`, `gender`, `birthPlace`, `birthDate`, `religion`, `maritalStatus`, `nationality`, `nik`, `nisn`, `phone`, `alternatePhone`, `email`, `address`, `rt`, `rw`, `village`, `district`, `city`, `province`, `postalCode`, `schoolOrigin`, `graduationYear`, `entryYear`, `entryPath`, `registrationNumber`, `bloodType`, `jacketSize`, `transportation`, `residenceType`) VALUES
+('biodata_mhs1','student_mhs1','Laki-laki','Jakarta','2004-01-15','Islam','Belum Menikah','Indonesia','3174011501040001','0061234501','081200000101','082200000101','mhs1@siakad.local','Jl. Pendidikan No. 1','01','03','Sukamaju','Kecamatan Utara','Jakarta','DKI Jakarta','60101','SMA Negeri 1 Jakarta',2025,2026,'Reguler','REG-20260001','O','L','Transportasi Umum','Bersama Orang Tua'),
+('biodata_mhs2','student_mhs2','Perempuan','Bandung','2003-08-22','Islam','Belum Menikah','Indonesia','3273022208030002','0061234502','081200000102','082200000102','mhs2@siakad.local','Jl. Kampus Raya No. 2','02','04','Cempaka','Kecamatan Tengah','Bandung','Jawa Barat','40102','SMA Negeri 2 Bandung',2025,2026,'Transfer','TRF-20260002','A','M','Sepeda Motor','Kos')
+ON DUPLICATE KEY UPDATE `gender` = VALUES(`gender`), `birthPlace` = VALUES(`birthPlace`), `birthDate` = VALUES(`birthDate`), `religion` = VALUES(`religion`), `maritalStatus` = VALUES(`maritalStatus`), `nationality` = VALUES(`nationality`), `nik` = VALUES(`nik`), `nisn` = VALUES(`nisn`), `phone` = VALUES(`phone`), `alternatePhone` = VALUES(`alternatePhone`), `email` = VALUES(`email`), `address` = VALUES(`address`), `rt` = VALUES(`rt`), `rw` = VALUES(`rw`), `village` = VALUES(`village`), `district` = VALUES(`district`), `city` = VALUES(`city`), `province` = VALUES(`province`), `postalCode` = VALUES(`postalCode`), `schoolOrigin` = VALUES(`schoolOrigin`), `graduationYear` = VALUES(`graduationYear`), `entryYear` = VALUES(`entryYear`), `entryPath` = VALUES(`entryPath`), `registrationNumber` = VALUES(`registrationNumber`), `bloodType` = VALUES(`bloodType`), `jacketSize` = VALUES(`jacketSize`), `transportation` = VALUES(`transportation`), `residenceType` = VALUES(`residenceType`);
 
 INSERT INTO `Course` (`id`, `code`, `name`, `sks`, `minPassingGrade`, `isMandatory`) VALUES
 ('course_if101','IF101','Algoritma dan Pemrograman',3,'C',1),

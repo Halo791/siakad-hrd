@@ -31,12 +31,15 @@ class StudentPortalController extends Controller
             ->orderBy('nim')
             ->get();
         $selectedStudent = $this->selectedStudent($request, $students);
+        $biodata = $selectedStudent ? $this->biodata($selectedStudent->id) : null;
 
         return view('portal.mahasiswa', [
             'tab' => $tab,
             'tabs' => $this->tabs,
             'students' => $students,
             'student' => $selectedStudent,
+            'biodata' => $biodata,
+            'biodataCompletion' => $selectedStudent ? $this->biodataCompletion($selectedStudent, $biodata) : 0,
             'activePeriod' => $this->activePeriod(),
             'studyPlans' => $selectedStudent ? $this->studyPlans($selectedStudent->id) : collect(),
             'khsRows' => $selectedStudent ? $this->khsRows($selectedStudent->id) : collect(),
@@ -72,6 +75,38 @@ class StudentPortalController extends Controller
 
         return DB::table('AcademicPeriod')->where('isActive', true)->orderByDesc('endDate')->first()
             ?: DB::table('AcademicPeriod')->orderByDesc('endDate')->first();
+    }
+
+    private function biodata(string $studentId)
+    {
+        if (!$this->tableExists('StudentBiodata')) return null;
+
+        return DB::table('StudentBiodata')->where('studentId', $studentId)->first();
+    }
+
+    private function biodataCompletion(Student $student, $biodata): int
+    {
+        $fields = [
+            $student->nim,
+            $student->name,
+            $student->studyProgramId,
+            $student->studentStatusId,
+            $student->studySystemId,
+            $biodata->nik ?? null,
+            $biodata->gender ?? null,
+            $biodata->birthPlace ?? null,
+            $biodata->birthDate ?? null,
+            $biodata->phone ?? null,
+            $biodata->address ?? null,
+            $biodata->city ?? null,
+            $biodata->province ?? null,
+            $biodata->schoolOrigin ?? null,
+            $biodata->entryYear ?? null,
+        ];
+
+        $filled = collect($fields)->filter(fn ($value) => filled($value))->count();
+
+        return (int) round(($filled / count($fields)) * 100);
     }
 
     private function studyPlans(string $studentId)

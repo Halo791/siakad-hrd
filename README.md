@@ -78,6 +78,12 @@ mhs0001@siakad.local / Admin@12345
 dosen0001@siakad.local / Admin@12345
 ```
 
+Untuk database yang sudah berjalan dan belum punya biodata lengkap mahasiswa, import file berikut satu kali lewat phpMyAdmin:
+
+```text
+database/siakad_biodata_update.sql
+```
+
 Jika perlu membuat ulang file SQL massal:
 
 ```bash

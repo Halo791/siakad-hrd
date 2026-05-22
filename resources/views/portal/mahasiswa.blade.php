@@ -18,7 +18,7 @@
     ];
     $tableTitles = [
         'daftar-mahasiswa' => 'Daftar Mahasiswa',
-        'biodata' => 'Orang Tua/Wali Mahasiswa',
+        'biodata' => 'Biodata Lengkap Mahasiswa',
         'krs' => 'Kartu Rencana Studi',
         'khs' => 'Kartu Hasil Studi',
         'transkrip' => 'Dokumen Transkrip',
@@ -55,6 +55,8 @@
     $totalBills = collect($finance['bills'] ?? [])->sum('amount');
     $totalPayments = collect($finance['payments'] ?? [])->sum('amount');
     $remainingBills = max(0, $totalBills - $totalPayments);
+    $bioValue = fn (string $field, mixed $fallback = '-') => filled($biodata?->{$field} ?? null) ? $biodata->{$field} : $fallback;
+    $bioDate = fn (?string $date) => $date ? substr($date, 0, 10) : '-';
 @endphp
 
 @section('content')
@@ -92,6 +94,7 @@
     .soft-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #dbeafe;border-radius:10px;background:#eff6ff;padding:9px 12px;color:#1d4ed8;font-size:12px;font-weight:900}
     .empty-state{border:1px dashed #cbd5e1;border-radius:12px;background:#f8fafc;padding:22px;text-align:center;color:#64748b;font-weight:800}
     .form-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .completion{height:9px;overflow:hidden;border-radius:999px;background:#e5e7eb}.completion span{display:block;height:100%;border-radius:999px;background:#42b429}
     @media(max-width:980px){.portal-shell{grid-template-columns:1fr}.portal-side{border-right:0;border-bottom:1px solid #e5e7eb}.portal-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-stats,.cards,.profile-grid,.form-preview{grid-template-columns:1fr}.portal-toolbar,.hero-strip{grid-template-columns:1fr;display:grid}.student-select{min-width:0}}
 </style>
 
@@ -199,12 +202,56 @@
                             <div class="field-card"><div class="stat-label">Status Akun</div><div class="value">{{ $student->user?->status ?? 'ACTIVE' }}</div></div>
                         </div>
                     @elseif($tab === 'biodata')
+                        <div class="cards">
+                            <div class="mini-card"><div class="stat-label">Kelengkapan</div><strong>{{ $biodataCompletion }}%</strong><div class="completion" style="margin-top:8px"><span style="width:{{ $biodataCompletion }}%"></span></div></div>
+                            <div class="mini-card"><div class="stat-label">NIK</div><strong>{{ $bioValue('nik') }}</strong></div>
+                            <div class="mini-card"><div class="stat-label">Nomor HP</div><strong>{{ $bioValue('phone') }}</strong></div>
+                            <div class="mini-card"><div class="stat-label">Asal Sekolah</div><strong>{{ $bioValue('schoolOrigin') }}</strong></div>
+                        </div>
+                        <h3 class="section-title">Identitas Pribadi</h3>
                         <div class="profile-grid">
                             <div class="field-card"><div class="stat-label">NIM</div><div class="value">{{ $student->nim }}</div></div>
                             <div class="field-card"><div class="stat-label">Nama Lengkap</div><div class="value">{{ $student->name }}</div></div>
-                            <div class="field-card"><div class="stat-label">Email</div><div class="value">{{ $student->user?->email ?? '-' }}</div></div>
-                            <div class="field-card"><div class="stat-label">Role</div><div class="value">{{ $roles->pluck('name')->join(', ') ?: '-' }}</div></div>
+                            <div class="field-card"><div class="stat-label">NIK</div><div class="value">{{ $bioValue('nik') }}</div></div>
+                            <div class="field-card"><div class="stat-label">NISN</div><div class="value">{{ $bioValue('nisn') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Jenis Kelamin</div><div class="value">{{ $bioValue('gender') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Tempat, Tanggal Lahir</div><div class="value">{{ $bioValue('birthPlace') }}, {{ $bioDate($biodata->birthDate ?? null) }}</div></div>
+                            <div class="field-card"><div class="stat-label">Agama</div><div class="value">{{ $bioValue('religion') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Kewarganegaraan</div><div class="value">{{ $bioValue('nationality') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Status Perkawinan</div><div class="value">{{ $bioValue('maritalStatus') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Golongan Darah</div><div class="value">{{ $bioValue('bloodType') }}</div></div>
                         </div>
+
+                        <h3 class="section-title" style="margin-top:18px">Kontak & Domisili</h3>
+                        <div class="profile-grid">
+                            <div class="field-card"><div class="stat-label">Email Login</div><div class="value">{{ $bioValue('email', $student->user?->email ?? '-') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Nomor HP</div><div class="value">{{ $bioValue('phone') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Nomor HP Alternatif</div><div class="value">{{ $bioValue('alternatePhone') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Alamat Lengkap</div><div class="value">{{ $bioValue('address') }}</div></div>
+                            <div class="field-card"><div class="stat-label">RT/RW</div><div class="value">{{ $bioValue('rt') }}/{{ $bioValue('rw') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Desa/Kelurahan</div><div class="value">{{ $bioValue('village') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Kecamatan</div><div class="value">{{ $bioValue('district') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Kabupaten/Kota</div><div class="value">{{ $bioValue('city') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Provinsi</div><div class="value">{{ $bioValue('province') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Kode Pos</div><div class="value">{{ $bioValue('postalCode') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Tempat Tinggal</div><div class="value">{{ $bioValue('residenceType') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Transportasi</div><div class="value">{{ $bioValue('transportation') }}</div></div>
+                        </div>
+
+                        <h3 class="section-title" style="margin-top:18px">Akademik Awal</h3>
+                        <div class="profile-grid">
+                            <div class="field-card"><div class="stat-label">Fakultas</div><div class="value">{{ $student->studyProgram?->faculty?->name ?? '-' }}</div></div>
+                            <div class="field-card"><div class="stat-label">Program Studi</div><div class="value">{{ $student->studyProgram?->code }} - {{ $student->studyProgram?->name }}</div></div>
+                            <div class="field-card"><div class="stat-label">Angkatan</div><div class="value">{{ $bioValue('entryYear', substr((string) $student->nim, 0, 4)) }}</div></div>
+                            <div class="field-card"><div class="stat-label">Jalur Masuk</div><div class="value">{{ $bioValue('entryPath') }}</div></div>
+                            <div class="field-card"><div class="stat-label">No. Pendaftaran</div><div class="value">{{ $bioValue('registrationNumber') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Asal Sekolah</div><div class="value">{{ $bioValue('schoolOrigin') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Tahun Lulus</div><div class="value">{{ $bioValue('graduationYear') }}</div></div>
+                            <div class="field-card"><div class="stat-label">Sistem Kuliah</div><div class="value">{{ $studySystemName ?? '-' }}</div></div>
+                            <div class="field-card"><div class="stat-label">Kelas</div><div class="value">{{ $studentClassName ?? '-' }}</div></div>
+                            <div class="field-card"><div class="stat-label">Status Mahasiswa</div><div class="value">{{ $studentStatusName ?? $student->status }}</div></div>
+                        </div>
+
                         <h3 class="section-title" style="margin-top:18px">Orang Tua / Wali</h3>
                         <div class="table-wrap" data-title="{{ $tableTitles[$tab] ?? $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Nama</th><th>Relasi</th><th>Nomor HP</th></tr></thead>

@@ -80,6 +80,23 @@ $lastNames = [
     'Wibowo', 'Salsabila', 'Utami', 'Fauzi', 'Hermawan',
 ];
 
+$locations = [
+    ['Jakarta', 'DKI Jakarta'],
+    ['Bandung', 'Jawa Barat'],
+    ['Surabaya', 'Jawa Timur'],
+    ['Yogyakarta', 'DI Yogyakarta'],
+    ['Semarang', 'Jawa Tengah'],
+    ['Malang', 'Jawa Timur'],
+];
+
+$villages = ['Sukamaju', 'Cempaka', 'Mekarsari', 'Karangjati', 'Tegalrejo'];
+$districts = ['Kecamatan Utara', 'Kecamatan Selatan', 'Kecamatan Barat', 'Kecamatan Timur', 'Kecamatan Tengah'];
+$entryPaths = ['Reguler', 'Transfer', 'Mandiri', 'Beasiswa'];
+$bloodTypes = ['A', 'B', 'O', 'AB'];
+$jacketSizes = ['S', 'M', 'L', 'XL'];
+$transportations = ['Sepeda Motor', 'Transportasi Umum', 'Jalan Kaki', 'Mobil Pribadi'];
+$residenceTypes = ['Bersama Orang Tua', 'Kos', 'Asrama', 'Kontrak'];
+
 function sqlValue(mixed $value): string
 {
     if ($value === null) {
@@ -361,6 +378,7 @@ insertRows($handle, 'GradeComponent', ['id', 'name', 'percentage', 'classId'], $
 $studentUsers = [];
 $students = [];
 $parents = [];
+$biodatas = [];
 $advisors = [];
 $studyPlans = [];
 $studyPlanItems = [];
@@ -389,6 +407,44 @@ for ($i = 1; $i <= $studentCount; $i++) {
     $studentUsers[] = [$userId, 'univ01', 'role_mahasiswa', $name, 'mhs'.$id.'@siakad.local', $passwordHash, null, 'ACTIVE', $now, $now];
     $students[] = [$studentId, $userId, $programId, $classRef[0], $studentStatus[0], $i % 9 === 0 ? 'study_system_kry' : 'study_system_reg', '2027'.$id, $name, $studentStatus[1], (($i - 1) % 8) + 1];
     $parents[] = ['demo_parent_'.$id, $studentId, 'Wali '.$name, $i % 2 === 0 ? 'Ibu' : 'Ayah', '0813'.str_pad((string) $i, 8, '0', STR_PAD_LEFT)];
+
+    [$city, $province] = $locations[($i - 1) % count($locations)];
+    $gender = $i % 2 === 0 ? 'Laki-laki' : 'Perempuan';
+    $entryYear = 2027;
+    $biodatas[] = [
+        'demo_biodata_'.$id,
+        $studentId,
+        $gender,
+        $city,
+        date('Y-m-d', strtotime('2003-01-01 +'.($i % 1200).' days')),
+        'Islam',
+        'Belum Menikah',
+        'Indonesia',
+        '33'.str_pad((string) $i, 14, '0', STR_PAD_LEFT),
+        '00'.str_pad((string) $i, 10, '0', STR_PAD_LEFT),
+        '0813'.str_pad((string) $i, 8, '0', STR_PAD_LEFT),
+        '0822'.str_pad((string) $i, 8, '0', STR_PAD_LEFT),
+        'mhs'.$id.'@siakad.local',
+        'Jl. Pendidikan No. '.(($i % 200) + 1),
+        str_pad((string) (($i % 20) + 1), 2, '0', STR_PAD_LEFT),
+        str_pad((string) (($i % 10) + 1), 2, '0', STR_PAD_LEFT),
+        $villages[($i - 1) % count($villages)],
+        $districts[($i - 1) % count($districts)],
+        $city,
+        $province,
+        '6'.str_pad((string) ($i % 9999), 4, '0', STR_PAD_LEFT),
+        'SMA Negeri '.(($i % 20) + 1).' '.$city,
+        $entryYear - 1,
+        $entryYear,
+        $entryPaths[($i - 1) % count($entryPaths)],
+        'REG-2027'.$id,
+        $bloodTypes[($i - 1) % count($bloodTypes)],
+        $jacketSizes[($i - 1) % count($jacketSizes)],
+        $transportations[($i - 1) % count($transportations)],
+        $residenceTypes[($i - 1) % count($residenceTypes)],
+        $now,
+        $now,
+    ];
 
     $lecturerNo = (($i - 1) % $lecturerCount) + 1;
     $advisors[] = ['demo_advisor_'.$id, $studentId, 'demo_lecturer_'.padded($lecturerNo, 4)];
@@ -461,6 +517,17 @@ for ($i = 1; $i <= $studentCount; $i++) {
 insertRows($handle, 'User', ['id', 'universityId', 'roleId', 'name', 'email', 'passwordHash', 'refreshToken', 'status', 'createdAt', 'updatedAt'], $studentUsers, ['universityId', 'roleId', 'name', 'email', 'passwordHash', 'refreshToken', 'status', 'updatedAt']);
 insertRows($handle, 'Student', ['id', 'userId', 'studyProgramId', 'studentClassId', 'studentStatusId', 'studySystemId', 'nim', 'name', 'status', 'currentSemester'], $students, ['userId', 'studyProgramId', 'studentClassId', 'studentStatusId', 'studySystemId', 'nim', 'name', 'status', 'currentSemester']);
 insertRows($handle, 'StudentParent', ['id', 'studentId', 'name', 'relation', 'phone'], $parents, ['studentId', 'name', 'relation', 'phone']);
+insertRows($handle, 'StudentBiodata', [
+    'id', 'studentId', 'gender', 'birthPlace', 'birthDate', 'religion', 'maritalStatus', 'nationality',
+    'nik', 'nisn', 'phone', 'alternatePhone', 'email', 'address', 'rt', 'rw', 'village', 'district',
+    'city', 'province', 'postalCode', 'schoolOrigin', 'graduationYear', 'entryYear', 'entryPath',
+    'registrationNumber', 'bloodType', 'jacketSize', 'transportation', 'residenceType', 'createdAt', 'updatedAt',
+], $biodatas, [
+    'studentId', 'gender', 'birthPlace', 'birthDate', 'religion', 'maritalStatus', 'nationality',
+    'nik', 'nisn', 'phone', 'alternatePhone', 'email', 'address', 'rt', 'rw', 'village', 'district',
+    'city', 'province', 'postalCode', 'schoolOrigin', 'graduationYear', 'entryYear', 'entryPath',
+    'registrationNumber', 'bloodType', 'jacketSize', 'transportation', 'residenceType', 'updatedAt',
+]);
 insertRows($handle, 'AcademicAdvisor', ['id', 'studentId', 'lecturerId'], $advisors, ['studentId', 'lecturerId']);
 insertRows($handle, 'StudyPlan', ['id', 'studentId', 'periodId', 'status'], $studyPlans, ['studentId', 'periodId', 'status']);
 insertRows($handle, 'ClassStudent', ['id', 'classId', 'studentId'], $classStudents, ['classId', 'studentId']);
@@ -482,6 +549,7 @@ writeLine($handle, 'SET FOREIGN_KEY_CHECKS = 1;');
 writeLine($handle);
 writeLine($handle, '-- Summary');
 writeLine($handle, '-- Students: '.$studentCount);
+writeLine($handle, '-- Student biodata: '.count($biodatas));
 writeLine($handle, '-- Lecturers: '.$lecturerCount);
 writeLine($handle, '-- Courses: '.count($courses));
 writeLine($handle, '-- Classes: '.count($classes));
