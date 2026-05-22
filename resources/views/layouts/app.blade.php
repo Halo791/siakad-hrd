@@ -3,6 +3,7 @@
     $studentPortal = fn (string $tab) => route('portal.mahasiswa', ['tab' => $tab] + (request('studentId') ? ['studentId' => request('studentId')] : []));
     $portal = fn (string $section, string $tab) => route('portal.index', ['section' => $section, 'tab' => $tab]);
     $curriculum = fn (string $tab) => route('curriculum.index', ['tab' => $tab]);
+    $classes = fn (string $tab) => route('classes.index', ['tab' => $tab]);
     $menuGroups = [
         [
             'label' => 'Beranda', 'description' => 'Ringkasan sistem', 'items' => [
@@ -61,17 +62,17 @@
                     ['label' => 'Prasyarat Mata Kuliah', 'href' => $curriculum('prasyarat-mata-kuliah'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'prasyarat-mata-kuliah'],
                     ['label' => 'Set Grup MK Wajib Pilihan', 'href' => $curriculum('grup-mk-wajib-pilihan'), 'active' => request()->routeIs('curriculum.index') && request('tab') === 'grup-mk-wajib-pilihan'],
                 ]],
-                ['label' => 'Data Kelas', 'children' => [
-                    ['label' => 'Tahun Ajaran', 'href' => $planned('Perkuliahan > Data Kelas > Tahun Ajaran')],
-                    ['label' => 'Kelas Kuliah', 'href' => $planned('Perkuliahan > Data Kelas > Kelas Kuliah')],
-                    ['label' => 'Detail Kelas Kuliah', 'href' => $planned('Perkuliahan > Data Kelas > Detail Kelas Kuliah')],
-                    ['label' => 'Dosen Pengajar', 'href' => $planned('Perkuliahan > Data Kelas > Dosen Pengajar')],
-                    ['label' => 'Jadwal Perkuliahan', 'href' => $planned('Perkuliahan > Data Kelas > Jadwal Perkuliahan')],
-                    ['label' => 'Peserta Kelas', 'href' => $planned('Perkuliahan > Data Kelas > Peserta Kelas')],
-                    ['label' => 'Presensi Kelas', 'href' => $planned('Perkuliahan > Data Kelas > Presensi Kelas')],
-                    ['label' => 'Nilai Perkuliahan', 'href' => $planned('Perkuliahan > Data Kelas > Nilai Perkuliahan')],
-                    ['label' => 'Jadwal & Presensi', 'href' => $planned('Perkuliahan > Data Kelas > Jadwal & Presensi')],
-                    ['label' => 'Pemutihan Nilai', 'href' => $planned('Perkuliahan > Data Kelas > Pemutihan Nilai')],
+                ['label' => 'Data Kelas', 'active' => request()->routeIs('classes.index'), 'children' => [
+                    ['label' => 'Tahun Ajaran', 'href' => $classes('tahun-ajaran'), 'active' => request()->routeIs('classes.index') && request('tab', 'tahun-ajaran') === 'tahun-ajaran'],
+                    ['label' => 'Kelas Kuliah', 'href' => $classes('kelas-kuliah'), 'active' => request()->routeIs('classes.index') && request('tab') === 'kelas-kuliah'],
+                    ['label' => 'Detail Kelas Kuliah', 'href' => $classes('detail-kelas-kuliah'), 'active' => request()->routeIs('classes.index') && request('tab') === 'detail-kelas-kuliah'],
+                    ['label' => 'Dosen Pengajar', 'href' => $classes('dosen-pengajar'), 'active' => request()->routeIs('classes.index') && request('tab') === 'dosen-pengajar'],
+                    ['label' => 'Jadwal Perkuliahan', 'href' => $classes('jadwal-perkuliahan'), 'active' => request()->routeIs('classes.index') && request('tab') === 'jadwal-perkuliahan'],
+                    ['label' => 'Peserta Kelas', 'href' => $classes('peserta-kelas'), 'active' => request()->routeIs('classes.index') && request('tab') === 'peserta-kelas'],
+                    ['label' => 'Presensi Kelas', 'href' => $classes('presensi-kelas'), 'active' => request()->routeIs('classes.index') && request('tab') === 'presensi-kelas'],
+                    ['label' => 'Nilai Perkuliahan', 'href' => $classes('nilai-perkuliahan'), 'active' => request()->routeIs('classes.index') && request('tab') === 'nilai-perkuliahan'],
+                    ['label' => 'Jadwal & Presensi', 'href' => $classes('jadwal-presensi'), 'active' => request()->routeIs('classes.index') && request('tab') === 'jadwal-presensi'],
+                    ['label' => 'Pemutihan Nilai', 'href' => $classes('pemutihan-nilai'), 'active' => request()->routeIs('classes.index') && request('tab') === 'pemutihan-nilai'],
                 ]],
                 ['label' => 'Administrasi', 'children' => [
                     ['label' => 'Status Semester', 'href' => $planned('Perkuliahan > Administrasi > Status Semester')],
