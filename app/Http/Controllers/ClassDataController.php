@@ -36,6 +36,8 @@ class ClassDataController extends Controller
     public function index(Request $request)
     {
         $tab = in_array($request->query('tab'), $this->tabs, true) ? $request->query('tab') : 'tahun-ajaran';
+        $perPage = $this->perPage($request);
+        $needsClassStudentOptions = in_array($tab, ['presensi-kelas', 'jadwal-presensi', 'nilai-perkuliahan', 'pemutihan-nilai'], true);
 
         return view('perkuliahan.data-kelas', [
             'tab' => $tab,
@@ -52,11 +54,13 @@ class ClassDataController extends Controller
             'classes' => $this->classes(),
             'classLecturers' => $this->classLecturers(),
             'schedules' => $this->schedules(),
-            'classStudents' => $this->classStudents(),
-            'meetings' => $this->meetings(),
-            'attendances' => $this->attendances(),
-            'grades' => $this->grades(),
+            'classStudents' => $tab === 'peserta-kelas' ? $this->classStudents($perPage) : collect(),
+            'classStudentOptions' => $needsClassStudentOptions ? $this->classStudentOptions() : collect(),
+            'meetings' => in_array($tab, ['presensi-kelas', 'jadwal-presensi'], true) ? $this->meetings() : collect(),
+            'attendances' => in_array($tab, ['presensi-kelas', 'jadwal-presensi'], true) ? $this->attendances($perPage) : collect(),
+            'grades' => in_array($tab, ['nilai-perkuliahan', 'pemutihan-nilai'], true) ? $this->grades($perPage) : collect(),
             'stats' => $this->stats(),
+            'perPage' => $perPage,
         ]);
     }
 
@@ -233,18 +237,29 @@ class ClassDataController extends Controller
             ->get());
     }
 
-    private function classStudents()
+    private function classStudents(int $perPage = 50)
     {
         if (!$this->hasTables(['ClassStudent'])) return collect();
 
-        return $this->safeGet(fn () => $this->table('ClassStudent')
+        return $this->safeGet(fn () => $this->classStudentQuery()->paginate($perPage)->withQueryString());
+    }
+
+    private function classStudentOptions()
+    {
+        if (!$this->hasTables(['ClassStudent'])) return collect();
+
+        return $this->safeGet(fn () => $this->classStudentQuery()->limit(1000)->get());
+    }
+
+    private function classStudentQuery()
+    {
+        return $this->table('ClassStudent')
             ->leftJoin('Class', 'ClassStudent.classId', '=', 'Class.id')
             ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->leftJoin('Student', 'ClassStudent.studentId', '=', 'Student.id')
             ->select('ClassStudent.*', 'Class.name as className', 'Course.code as courseCode', 'Course.name as courseName', 'Student.nim', 'Student.name as studentName')
             ->orderBy('Course.code')
-            ->orderBy('Student.nim')
-            ->get());
+            ->orderBy('Student.nim');
     }
 
     private function meetings()
@@ -259,7 +274,7 @@ class ClassDataController extends Controller
             ->get());
     }
 
-    private function attendances()
+    private function attendances(int $perPage = 50)
     {
         if (!$this->hasTables(['Attendance'])) return collect();
 
@@ -271,10 +286,10 @@ class ClassDataController extends Controller
             ->leftJoin('Course', 'Class.courseId', '=', 'Course.id')
             ->select('Attendance.*', 'Meeting.meetingNo', 'Meeting.meetingDate', 'Student.nim', 'Student.name as studentName', 'Course.code as courseCode', 'Course.name as courseName')
             ->orderBy('Meeting.meetingDate')
-            ->get());
+            ->paginate($perPage)->withQueryString());
     }
 
-    private function grades()
+    private function grades(int $perPage = 50)
     {
         if (!$this->hasTables(['Grade'])) return collect();
 
@@ -286,7 +301,7 @@ class ClassDataController extends Controller
             ->select('Grade.*', 'Student.nim', 'Student.name as studentName', 'Course.code as courseCode', 'Course.name as courseName', 'Class.name as className')
             ->orderBy('Course.code')
             ->orderBy('Student.nim')
-            ->get());
+            ->paginate($perPage)->withQueryString());
     }
 
     private function stats(): array
@@ -307,6 +322,13 @@ class ClassDataController extends Controller
             $query = DB::table($table);
             return $descending ? $query->orderByDesc($orderBy)->get() : $query->orderBy($orderBy)->get();
         });
+    }
+
+    private function perPage(Request $request): int
+    {
+        $perPage = (int) $request->query('per_page', 50);
+
+        return min(100, max(10, $perPage));
     }
 
     private function countRows(string $table): int
