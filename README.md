@@ -63,6 +63,27 @@ Jika cPanel tidak mengizinkan document root ke folder tersebut, upload isi `publ
 superadmin@siakad.local / Admin@12345
 ```
 
+## Data Demo Besar
+
+Untuk mengisi data contoh massal di cPanel/phpMyAdmin, import file berikut setelah struktur database utama sudah masuk:
+
+```text
+database/siakad_demo_1000.sql
+```
+
+Isi file tersebut mencakup 1000 mahasiswa, 120 dosen, mata kuliah, kelas, KRS, nilai, tagihan, pembayaran, pembimbing akademik, aktivitas, dan data pendukung lain. Akun contoh yang ikut dibuat:
+
+```text
+mhs0001@siakad.local / Admin@12345
+dosen0001@siakad.local / Admin@12345
+```
+
+Jika perlu membuat ulang file SQL massal:
+
+```bash
+php database/generate_demo_1000.php
+```
+
 ## Endpoint Awal
 
 ```text
