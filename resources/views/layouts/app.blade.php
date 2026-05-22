@@ -314,6 +314,7 @@
         *{box-sizing:border-box}body{margin:0;background:var(--soft);color:var(--ink);font-family:Inter,Arial,sans-serif}a{text-decoration:none;color:inherit}
         .app{min-height:100vh}.wrap{max-width:1120px;margin:0 auto;padding:12px 16px 28px}.topnav{position:relative;z-index:20;border-radius:12px;background:var(--green);padding:10px 14px;box-shadow:0 18px 35px rgba(66,180,41,.18)}
         .navrow{display:flex;align-items:center;gap:18px}.avatar{display:flex;height:58px;width:58px;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(255,255,255,.16);color:white;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+        .top-actions{display:flex;align-items:center;gap:8px}.user-pill{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:999px;background:rgba(255,255,255,.18);padding:8px 12px;color:white;font-size:12px;font-weight:900}.logout-btn{border:1px solid rgba(255,255,255,.7);border-radius:999px;background:white;padding:8px 12px;color:var(--green-dark);font-size:12px;font-weight:900;cursor:pointer}.logout-btn:hover{background:#f0fbea}
         .menus{display:flex;flex:1;flex-wrap:wrap;justify-content:center;gap:4px;margin:0;padding:0;list-style:none}.menu{position:relative}.menu-btn{display:flex;min-width:78px;flex-direction:column;align-items:center;gap:4px;border:0;border-radius:8px;background:transparent;padding:7px 8px;color:white;cursor:pointer}
         .menu:hover .menu-btn,.menu:focus-within .menu-btn{background:rgba(255,255,255,.2)}.menu-icon{display:grid;height:18px;width:18px;place-items:center;border:1px solid rgba(255,255,255,.72);border-radius:5px;font-size:10px;line-height:1}.menu-label{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:16px}
         .dropdown{position:absolute;left:50%;top:100%;display:none;width:310px;transform:translateX(-50%);padding-top:8px}.menu:hover .dropdown,.menu:focus-within .dropdown{display:block}.dropdown-inner{overflow:visible;border:1px solid #f1f5f9;border-radius:12px;background:white;padding:8px;box-shadow:0 22px 60px rgba(0,0,0,.18)}
@@ -326,7 +327,7 @@
         .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;background:white}th,td{border-bottom:1px solid #edf2f7;padding:13px 14px;text-align:left;font-size:14px;vertical-align:top}th{background:#f1f5f9;color:#64748b;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}tbody tr:hover{background:#fbfdfb}.badge{display:inline-flex;border-radius:999px;background:#dcfce7;padding:5px 10px;color:#047857;font-size:12px;font-weight:900}.badge.gray{background:#f1f5f9;color:#475569}
         label{display:block;margin-top:12px;color:#334155;font-size:13px;font-weight:800}input,select{width:100%;margin-top:6px;border:1px solid #cbd5e1;border-radius:10px;background:white;padding:11px 12px;font:inherit;outline:none}input:focus,select:focus{border-color:#42b429;box-shadow:0 0 0 4px #e9f8e6}.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:10px;background:var(--green);padding:11px 15px;color:white;font-weight:900;cursor:pointer}.btn:hover{background:var(--green-dark)}
         .alert{border-radius:10px;padding:12px 14px;margin-bottom:14px;font-weight:700}.ok{border:1px solid #86efac;background:#dcfce7;color:#166534}.err{border:1px solid #fecaca;background:#fee2e2;color:#991b1b}.pager{padding:14px}
-        @media(max-width:900px){.wrap{padding:10px 12px 22px}.navrow{align-items:flex-start}.avatar{height:46px;width:46px}.menus{justify-content:flex-start}.metrics,.grid-2,.grid-form{grid-template-columns:1fr}.page-head{align-items:flex-start;flex-direction:column}.dropdown{left:0;transform:none;width:min(310px,calc(100vw - 32px))}.submenu-panel{position:static;display:block;width:auto;padding:0 0 0 18px}.submenu-inner{max-height:none;box-shadow:none;border:0;padding:0}.submenu-title{display:none}}
+        @media(max-width:900px){.wrap{padding:10px 12px 22px}.navrow{align-items:flex-start;flex-wrap:wrap}.avatar{height:46px;width:46px}.menus{justify-content:flex-start;order:3;width:100%}.top-actions{margin-left:auto}.metrics,.grid-2,.grid-form{grid-template-columns:1fr}.page-head{align-items:flex-start;flex-direction:column}.dropdown{left:0;transform:none;width:min(310px,calc(100vw - 32px))}.submenu-panel{position:static;display:block;width:auto;padding:0 0 0 18px}.submenu-inner{max-height:none;box-shadow:none;border:0;padding:0}.submenu-title{display:none}}
     </style>
 </head>
 <body>
@@ -373,6 +374,15 @@
                         </li>
                     @endforeach
                 </ul>
+                @if(session('siakad_user_id'))
+                    <div class="top-actions">
+                        <span class="user-pill">{{ session('siakad_name') ?? 'User' }}</span>
+                        <form method="post" action="{{ route('logout') }}">
+                            @csrf
+                            <button class="logout-btn" type="submit">Logout</button>
+                        </form>
+                    </div>
+                @endif
             </div>
         </nav>
 

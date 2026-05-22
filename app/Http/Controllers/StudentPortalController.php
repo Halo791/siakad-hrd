@@ -49,6 +49,7 @@ class StudentPortalController extends Controller
             'mbkmActivities' => $selectedStudent ? $this->mbkmRows($selectedStudent->id) : collect(),
             'conversionRows' => $selectedStudent ? $this->conversionRows($selectedStudent->id) : collect(),
             'semesterStatus' => $selectedStudent ? $this->semesterStatus($selectedStudent->id) : null,
+            'studyPrograms' => $this->studyPrograms(),
         ]);
     }
 
@@ -164,6 +165,18 @@ class StudentPortalController extends Controller
             ->leftJoin('Course', 'MbkmConversion.courseId', '=', 'Course.id')
             ->where('MbkmActivity.studentId', $studentId)
             ->select('MbkmConversion.*', 'MbkmActivity.type', 'MbkmActivity.partner', 'Course.code as courseCode', 'Course.name as courseName', 'Course.sks')
+            ->get();
+    }
+
+    private function studyPrograms()
+    {
+        if (!$this->tableExists('StudyProgram')) return collect();
+
+        return DB::table('StudyProgram')
+            ->leftJoin('Faculty', 'StudyProgram.facultyId', '=', 'Faculty.id')
+            ->select('StudyProgram.*', 'Faculty.name as facultyName')
+            ->orderBy('Faculty.name')
+            ->orderBy('StudyProgram.name')
             ->get();
     }
 
