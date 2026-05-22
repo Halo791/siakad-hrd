@@ -7,7 +7,7 @@
         <h2 class="section-title">Daftar Mahasiswa</h2>
         <p class="muted" style="margin:0">Data mahasiswa aktif dari tabel akademik utama.</p>
     </div>
-    <div class="table-wrap" data-title="Tabel Data"><table>
+    <div class="table-wrap" data-title="Daftar Mahasiswa"><table>
         <thead><tr><th>NIM</th><th>Nama</th><th>Email</th><th>Prodi</th><th>Semester</th><th>Status</th></tr></thead>
         <tbody>
         @forelse($students as $student)

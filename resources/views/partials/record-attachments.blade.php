@@ -1,6 +1,9 @@
 @php
     $items = $attachments->get($table.'|'.$id, collect());
     $params = array_merge(['resource' => $resource, 'id' => $id], $extraParams ?? []);
+    $titleLabel = $titleLabel ?? 'Judul file';
+    $urlLabel = $urlLabel ?? 'Link Google Drive / gambar';
+    $buttonText = $buttonText ?? 'Simpan Link';
 @endphp
 
 <div class="preview-grid">
@@ -18,7 +21,7 @@
 
 <form class="mini-form" method="post" action="{{ route($storeRoute, $params) }}">
     @csrf
-    <label>Judul gambar<input name="title" placeholder="Preview / dokumen"></label>
-    <label>Link Google Drive / gambar<input name="imageUrl" placeholder="https://drive.google.com/file/d/.../view"></label>
-    <button class="btn" type="submit">Upload Link</button>
+    <label>{{ $titleLabel }}<input name="title" placeholder="Preview / dokumen"></label>
+    <label>{{ $urlLabel }}<input name="imageUrl" placeholder="https://drive.google.com/file/d/.../view"></label>
+    <button class="btn" type="submit">{{ $buttonText }}</button>
 </form>

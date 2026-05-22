@@ -7,7 +7,7 @@
         <h2 class="section-title">Daftar Dosen</h2>
         <p class="muted" style="margin:0">Data dosen dan program studi asal.</p>
     </div>
-    <div class="table-wrap" data-title="Tabel Data"><table>
+    <div class="table-wrap" data-title="Daftar Dosen"><table>
         <thead><tr><th>NIDN</th><th>Nama</th><th>Email</th><th>Prodi</th></tr></thead>
         <tbody>
         @forelse($lecturers as $lecturer)
