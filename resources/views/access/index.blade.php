@@ -24,7 +24,7 @@
             <h2 class="section-title">Register lalu atur role</h2>
             <p class="muted" style="margin:0">Setelah user dibuat, gunakan konfigurasi role untuk menyesuaikan hak akses.</p>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>User Terbaru</th><th>Role Utama</th><th>Jumlah Role</th></tr></thead><tbody>
+        <div class="table-wrap" data-title="Tabel Data"><table><thead><tr><th>User Terbaru</th><th>Role Utama</th><th>Jumlah Role</th></tr></thead><tbody>
         @foreach($users as $user)
             <tr>
                 <td><strong>{{ $user->name }}</strong><br><span class="muted">{{ $user->email }}</span></td>

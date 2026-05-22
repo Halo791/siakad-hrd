@@ -157,7 +157,7 @@
                             <a class="soft-btn" href="{{ route('master.students') }}">Master Mahasiswa</a>
                             <a class="soft-btn" href="{{ $selectedUrl('salin-mahasiswa') }}">Salin Data</a>
                         </div>
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>NIM</th><th>Nama</th><th>Email</th><th>Prodi</th><th>Status</th><th>Aksi</th></tr></thead>
                             <tbody>
                             @foreach($students as $row)
@@ -195,7 +195,7 @@
                             <div class="field-card"><div class="stat-label">Role</div><div class="value">{{ $roles->pluck('name')->join(', ') ?: '-' }}</div></div>
                         </div>
                         <h3 class="section-title" style="margin-top:18px">Orang Tua / Wali</h3>
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Nama</th><th>Relasi</th><th>Nomor HP</th></tr></thead>
                             <tbody>
                             @forelse($student->parents as $parent)
@@ -213,7 +213,7 @@
                             <div class="mini-card"><div class="stat-label">SKS</div><strong>{{ $semesterStatus['plannedSks'] ?? 0 }}</strong></div>
                         </div>
                     @elseif($tab === 'krs')
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Periode</th><th>Status</th><th>Jumlah Kelas</th><th>SKS</th><th>Mata Kuliah</th></tr></thead>
                             <tbody>
                             @forelse($studyPlans as $plan)
@@ -230,7 +230,7 @@
                             </tbody>
                         </table></div>
                     @elseif($tab === 'khs')
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Periode</th><th>Total SKS</th><th>IPS</th><th>IPK</th></tr></thead>
                             <tbody>
                             @forelse($khsRows as $row)
@@ -247,7 +247,7 @@
                             <div class="mini-card"><div class="stat-label">Dokumen</div><strong>{{ $documents->count() }}</strong></div>
                             <div class="mini-card"><div class="stat-label">Status</div><strong>{{ $transcript ? 'Tersedia' : 'Belum dibuat' }}</strong></div>
                         </div>
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Dokumen</th><th>File</th><th>Tanggal</th></tr></thead>
                             <tbody>
                             @forelse($documents as $document)
@@ -267,13 +267,13 @@
                         <div class="grid grid-2">
                             <div>
                                 <h3 class="section-title">Tagihan</h3>
-                                <div class="table-wrap"><table><thead><tr><th>Jenis</th><th>Nominal</th><th>Status</th></tr></thead><tbody>
+                                <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table><thead><tr><th>Jenis</th><th>Nominal</th><th>Status</th></tr></thead><tbody>
                                 @forelse($finance['bills'] as $bill)<tr><td>{{ $bill->type }}</td><td>Rp {{ number_format($bill->amount, 0, ',', '.') }}</td><td>{{ $bill->status }}</td></tr>@empty<tr><td colspan="3">Belum ada tagihan.</td></tr>@endforelse
                                 </tbody></table></div>
                             </div>
                             <div>
                                 <h3 class="section-title">Pembayaran</h3>
-                                <div class="table-wrap"><table><thead><tr><th>Metode</th><th>Nominal</th><th>Status</th></tr></thead><tbody>
+                                <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table><thead><tr><th>Metode</th><th>Nominal</th><th>Status</th></tr></thead><tbody>
                                 @forelse($finance['payments'] as $payment)<tr><td>{{ $payment->method }}</td><td>Rp {{ number_format($payment->amount, 0, ',', '.') }}</td><td>{{ $payment->status }}</td></tr>@empty<tr><td colspan="3">Belum ada pembayaran.</td></tr>@endforelse
                                 </tbody></table></div>
                             </div>
@@ -286,7 +286,7 @@
                             <div class="field-card"><div class="stat-label">Konsentrasi</div><div class="value">{{ $student->concentration ?? $student->interest ?? 'Reguler' }}</div></div>
                         </div>
                         <h3 class="section-title" style="margin-top:18px">Referensi Prodi</h3>
-                        <div class="table-wrap"><table><thead><tr><th>Kode</th><th>Program Studi</th><th>Fakultas</th></tr></thead><tbody>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table><thead><tr><th>Kode</th><th>Program Studi</th><th>Fakultas</th></tr></thead><tbody>
                             @forelse($studyPrograms as $program)
                                 <tr><td>{{ $program->code }}</td><td>{{ $program->name }}</td><td>{{ $program->facultyName ?? '-' }}</td></tr>
                             @empty
@@ -309,7 +309,7 @@
                             </label>
                         </div>
                     @elseif($tab === 'nilai-konversi')
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Kegiatan</th><th>Mitra</th><th>Mata Kuliah</th><th>SKS</th><th>Nilai Konversi</th></tr></thead>
                             <tbody>
                             @forelse($conversionRows as $row)
@@ -320,7 +320,7 @@
                             </tbody>
                         </table></div>
                     @elseif($tab === 'aktivitas-prestasi')
-                        <div class="table-wrap"><table>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table>
                             <thead><tr><th>Aktivitas</th><th>Kategori</th><th>Skor</th><th>SKPI</th></tr></thead>
                             <tbody>
                             @forelse($activities as $activity)
@@ -331,7 +331,7 @@
                             </tbody>
                         </table></div>
                         <h3 class="section-title" style="margin-top:18px">Aktivitas MBKM</h3>
-                        <div class="table-wrap"><table><thead><tr><th>Tipe</th><th>Mitra</th><th>Semester</th></tr></thead><tbody>
+                        <div class="table-wrap" data-title="{{ $tabLabels[$tab] ?? 'Tabel Data' }}"><table><thead><tr><th>Tipe</th><th>Mitra</th><th>Semester</th></tr></thead><tbody>
                             @forelse($mbkmActivities as $activity)
                                 <tr><td>{{ $activity->type }}</td><td>{{ $activity->partner }}</td><td>{{ $activity->semester }}</td></tr>
                             @empty
